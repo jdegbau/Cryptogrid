@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex" />
+    <title>Cryptic Grid Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">Cryptic Grid Game</h1>
+            <div class="status">
+                <div class="timer" id="timer">Time: 0:00</div>
+                <div class="errors" id="errors">Errors Remaining: </div>
+            </div>
+        </header>
+        <main class="main">
+            <section class="clues-section" id="clues-container">
+                <table class="clues-table" id="clues-table">
+                    <thead>
+                        <tr>
+                            <th>Row</th>
+                            <th>Clue</th>
+                        </tr>
+                    </thead>
+                    <tbody id="row-clues">
+                        <!-- Row clues will be inserted here -->
+                    </tbody>
+                    <thead>
+                        <tr>
+                            <th>Column</th>
+                            <th>Clue</th>
+                        </tr>
+                    </thead>
+                    <tbody id="col-clues">
+                        <!-- Column clues will be inserted here -->
+                    </tbody>
+                </table>
+            </section>
+            <section class="grid-section" id="grid-container"></section>
+        </main>
+        <footer class="footer">
+            <button class="check-btn" id="check-button" onclick="checkSolution()">Check Solution</button>
+            <button class="share-btn" id="share-button">Share Your Score</button>
+            <p class="result" id="result"></p>
+        </footer>
+    </div>
+    <script src="crypticGrid.js"></script>
+</body>
+</html>
