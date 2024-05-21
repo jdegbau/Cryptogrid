@@ -39,10 +39,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     cellDiv.classList.add("preset");
                 } else {
                     const input = document.createElement("input");
-                    input.setAttribute("type", "text");
+                    input.setAttribute("type", "number");
                     input.setAttribute("min", "1");
                     input.setAttribute("max", "9");
                     input.setAttribute("inputmode", "decimal")
+                    input.setAttribute("pattern,""\d*"")
                     input.setAttribute("data-row", rowIndex);
                     input.setAttribute("data-col", colIndex);
                     cellContent.appendChild(input);
