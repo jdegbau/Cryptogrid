@@ -189,6 +189,15 @@ body {
 
 /* Responsive Styles */
 @media (max-width: 768px) {
+    .grid-section {
+        order: 1; /* Makes grid appear first */
+    }
+
+    .clues-section {
+        order: 2; /* Makes clues appear second */
+        margin-top: 20px; /* Adds some spacing between the grid and clues */
+    }
+
     .main {
         flex-direction: column;
         align-items: center;
