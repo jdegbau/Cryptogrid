@@ -1,4 +1,4 @@
-const startId = 101;
+const startId = 0;
 
 const generateRandomGrid = (size) => {
     const grid = [];
@@ -96,7 +96,7 @@ const generatePuzzles = (numPuzzles, size) => {
 const generateDisplayGrid = (answerGrid) => {
     const size = answerGrid.length;
     const displayGrid = JSON.parse(JSON.stringify(answerGrid)); // Deep copy
-    const numToFill = Math.floor(Math.random() * (size * size / 2 - 2)) + 2;
+    const numToFill = Math.floor(Math.random() * 3) + 8; // Populate 8-10 cells
     const filledCells = generateFilledCells(size, numToFill);
 
     for (let rowIndex = 0; rowIndex < size; rowIndex++) {
@@ -112,16 +112,33 @@ const generateDisplayGrid = (answerGrid) => {
 
 const generateFilledCells = (size, numToFill) => {
     const filledCells = new Set();
-    for (let i = 0; i < size; i++) {
-        filledCells.add(`${i}-${Math.floor(Math.random() * size)}`);
-        filledCells.add(`${Math.floor(Math.random() * size)}-${i}`);
+    const rowFillCount = Array(size).fill(0);
+    const colFillCount = Array(size).fill(0);
+
+    // Generate a list of all possible coordinates
+    const allCoords = [];
+    for (let row = 0; row < size; row++) {
+        for (let col = 0; col < size; col++) {
+            allCoords.push({ row, col });
+        }
     }
-    while (filledCells.size < numToFill) {
-        filledCells.add(`${Math.floor(Math.random() * size)}-${Math.floor(Math.random() * size)}`);
+
+    // Shuffle the coordinates
+    allCoords.sort(() => Math.random() - 0.5);
+
+    // Fill the cells while respecting the constraints
+    for (const { row, col } of allCoords) {
+        if (filledCells.size >= numToFill) break;
+        if (rowFillCount[row] < 3 && colFillCount[col] < 3) {
+            filledCells.add(`${row}-${col}`);
+            rowFillCount[row]++;
+            colFillCount[col]++;
+        }
     }
+
     return filledCells;
 };
 
 // Generate 10 puzzles of size 4x4
-const puzzles = generatePuzzles(100, 4);
+const puzzles = generatePuzzles(10, 4);
 console.log(JSON.stringify(puzzles, null, 2));
