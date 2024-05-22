@@ -142,14 +142,24 @@ document.addEventListener("DOMContentLoaded", () => {
                 } else {
                     const input = document.createElement("input");
                     input.type = "text";
-                    input.min = "1";
-                    input.max = "9";
-                    input.inputMode = "decimal";
+                    input.inputMode = "numeric"; // Hint that the input should be numeric
                     input.maxLength = "1";
-                    input.pattern = "\\d*";
+                    input.pattern = "[1-9]"; // Allow only digits 1-9
+                    input.ariaLabel = "Enter a number between 1 and 9"; // ARIA label for accessibility
                     input.dataset.row = rowIndex;
                     input.dataset.col = colIndex;
+
+                    // Ensure the input is a valid digit between 1 and 9
+                    input.addEventListener('input', (e) => {
+                        const value = e.target.value;
+                        if (!/^[1-9]$/.test(value)) {
+                            e.target.value = ''; // Clear the input if it's not a valid digit
+                        }
+
+                    });
+
                     input.addEventListener('input', (e) => handleInput(e, rowIndex, colIndex));
+
                     cellContent.appendChild(input);
                 }
 
