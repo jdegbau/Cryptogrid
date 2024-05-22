@@ -57,20 +57,26 @@ document.addEventListener("DOMContentLoaded", () => {
                     const cellContent = cellDiv.querySelector(".grid-cell-content");
                     const input = cellDiv.querySelector("input");
                     if (input) {
-                        if (parseInt(input.value) === cell) {
+                        const guessedValue = parseInt(input.value);
+                        if (guessedValue === cell) {
                             cellContent.textContent = cell;
                             cellDiv.classList.add("correct");
-                            cellDiv.classList.remove("incorrect");
+                            cellDiv.classList.remove("incorrect", "hint");
                             input.remove();
                             userSolution[rowIndex][colIndex] = cell;  // Update correct answer in userSolution
+                        } else if (Math.abs(guessedValue - cell) <= 2) {
+                            cellDiv.classList.add("hint");
+                            cellDiv.classList.remove("incorrect");
                         } else {
                             cellDiv.classList.add("incorrect");
+                            cellDiv.classList.remove("hint");
                         }
                     }
                 }
             });
         });
     };
+
 
     const showEndGameMessage = (message) => {
         clearInterval(timerInterval);

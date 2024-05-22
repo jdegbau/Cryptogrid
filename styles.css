@@ -122,6 +122,11 @@ body {
     color: #b71c1c;
 }
 
+.grid-cell.hint .grid-cell-content {
+    background: #ffeb3b;
+    color: #f57f17;
+}
+
 .clues-section {
     width: 100%;
     max-width: 300px;
