@@ -16,45 +16,13 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("errors").innerHTML = `Guesses: ${errorIcons}`;
     };
 
-    const loadGame = () => {
-        const savedGame = JSON.parse(localStorage.getItem('pesudokuGame'));
-        if (savedGame) {
-            const savedDate = new Date(savedGame.savedDate);
-            const currentDate = new Date();
-
-            // Check if the saved date is the same as the current date
-            if (savedDate.toDateString() === currentDate.toDateString()) {
-                currentPuzzle = savedGame.currentPuzzle;
-                window.userSolution = savedGame.userSolution;
-                guessesLeft = savedGame.guessesLeft;
-                startTime = new Date(savedGame.startTime);
-                displayPuzzle(currentPuzzle.displayGrid);
-                updateErrorCount();
-                startTimer();
-                return true; // Indicate that the game was successfully loaded
-            } else {
-                // Clear the saved game if it's from a previous day
-                localStorage.removeItem('pesudokuGame');
-            }
-        }
-        return false; // Indicate that no game was loaded
-    };
-
-    const saveGame = () => {
-        const currentDate = new Date();
-        const gameData = {
-            currentPuzzle,
-            userSolution: window.userSolution,
-            guessesLeft,
-            startTime: startTime.toISOString(),
-            savedDate: currentDate.toISOString()
-        };
-        localStorage.setItem('pesudokuGame', JSON.stringify(gameData));
-    };
-
     const checkAllCellsCorrect = (userSolution, correctGrid) => {
         for (let rowIndex = 0; rowIndex < correctGrid.length; rowIndex++) {
             for (let colIndex = 0; colIndex < correctGrid[rowIndex].length; colIndex++) {
+                // Debugging logs
+                console.log(`Checking cell [${rowIndex}][${colIndex}]: userSolution = ${userSolution[rowIndex][colIndex]}, correctGrid = ${correctGrid[rowIndex][colIndex]}`);
+
+                // Check if the user's solution matches the correct grid
                 if (correctGrid[rowIndex][colIndex] !== userSolution[rowIndex][colIndex]) {
                     return false;
                 }
@@ -165,12 +133,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     input.dataset.row = rowIndex;
                     input.dataset.col = colIndex;
                     input.addEventListener('input', (e) => handleInput(e, rowIndex, colIndex));
-
-                    // Populate input with user solution if available
-                    if (window.userSolution && window.userSolution[rowIndex][colIndex] !== null) {
-                        input.value = window.userSolution[rowIndex][colIndex];
-                    }
-
                     cellContent.appendChild(input);
                 }
 
@@ -260,22 +222,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 showEndGameMessage("No more guesses left. Try again tomorrow!");
             }
         }
-
-        saveGame(); // Save the game after each check
     };
 
     fetch('grids.json')
         .then(response => response.json())
         .then(puzzles => {
             currentPuzzle = puzzles.find(puzzle => puzzle.id === puzzleID);
-            if (!loadGame()) {
-                startTime = new Date();
-                window.userSolution = Array.from({ length: currentPuzzle.displayGrid.length }, () => Array(currentPuzzle.displayGrid.length).fill(null));
-                displayPuzzle(currentPuzzle.displayGrid);
-                displayClues(currentPuzzle);
-                startTimer();
-                console.log(currentPuzzle);
-            }
+            startTime = new Date();
+            displayPuzzle(currentPuzzle.displayGrid);
+            displayClues(currentPuzzle);
+            startTimer();
+            console.log(currentPuzzle);
         });
 
     const displayClues = (puzzle) => {
@@ -307,6 +264,4 @@ document.addEventListener("DOMContentLoaded", () => {
         };
         return rules[rule.rule] || 'Unknown rule';
     };
-
-    setInterval(saveGame, 60000); // Save the game every 60 seconds
 });
