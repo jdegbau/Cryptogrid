@@ -4,17 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex" />
-    <title>Cryptic Grid Game</title>
+    <title>Pseudoku</title>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
         <header class="header">
-            <h1 class="title">Cryptic Grid Game</h1>
+            <h1 class="title">Pseudoku</h1>
             <div class="status">
                 <div class="timer" id="timer">Time: 0:00</div>
-                <div class="errors" id="errors">Errors Remaining: </div>
+                <div class="errors" id="errors">Guesses Remaining: </div>
             </div>
         </header>
         <main class="main">
@@ -43,8 +43,8 @@
             <section class="grid-section" id="grid-container"></section>
         </main>
         <footer class="footer">
-            <button class="check-btn" id="check-button" onclick="checkSolution()">Check Solution</button>
-            <button class="share-btn" id="share-button">Share Your Score</button>
+            <button class="button check-btn" id="check-button" onclick="checkSolution()">Submit Guess</button>
+            <button class="button share-btn" id="share-button">Share Your Score</button>
             <p class="result" id="result"></p>
         </footer>
     </div>

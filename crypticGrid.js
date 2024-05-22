@@ -1,35 +1,152 @@
-document.addEventListener("DOMContentLoaded", function () {
-    let currentPuzzle;
-    let guessesLeft = 5;
-    let guessesTaken = 0;
-    let startTime;
-    let timerInterval;
-    const puzzleID = 1; // Example ID, you can change this to dynamically load different puzzles
+document.addEventListener("DOMContentLoaded", () => {
+    let currentPuzzle, guessesLeft = 5, startTime, timerInterval;
+    const puzzleID = 1;
 
-    fetch('grids.json')
-        .then(response => response.json())
-        .then(puzzles => {
-            currentPuzzle = puzzles.find(puzzle => puzzle.id === puzzleID);
-            startTime = new Date();
-            displayPuzzle(currentPuzzle.displayGrid);
-            displayClues(currentPuzzle);
-            startTimer();
-            console.log(currentPuzzle);
+    const updateResultMessage = (message) => {
+        document.getElementById("result").textContent = message;
+    };
+
+    const updateErrorCount = () => {
+        const totalGuesses = 5;
+        const guessesUsed = totalGuesses - guessesLeft;
+        const numberEmojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣'];
+        const errorIcons = numberEmojis.map((emoji, index) => {
+            return `<span class="guess-icon">${index < guessesUsed ? '❌' : emoji}</span>`;
+        }).join('');
+        document.getElementById("errors").innerHTML = `Guesses: ${errorIcons}`;
+    };
+
+    const loadGame = () => {
+        const savedGame = JSON.parse(localStorage.getItem('pesudokuGame'));
+        if (savedGame) {
+            const savedDate = new Date(savedGame.savedDate);
+            const currentDate = new Date();
+
+            // Check if the saved date is the same as the current date
+            if (savedDate.toDateString() === currentDate.toDateString()) {
+                currentPuzzle = savedGame.currentPuzzle;
+                window.userSolution = savedGame.userSolution;
+                guessesLeft = savedGame.guessesLeft;
+                startTime = new Date(savedGame.startTime);
+                displayPuzzle(currentPuzzle.displayGrid);
+                updateErrorCount();
+                startTimer();
+                return true; // Indicate that the game was successfully loaded
+            } else {
+                // Clear the saved game if it's from a previous day
+                localStorage.removeItem('pesudokuGame');
+            }
+        }
+        return false; // Indicate that no game was loaded
+    };
+
+    const saveGame = () => {
+        const currentDate = new Date();
+        const gameData = {
+            currentPuzzle,
+            userSolution: window.userSolution,
+            guessesLeft,
+            startTime: startTime.toISOString(),
+            savedDate: currentDate.toISOString()
+        };
+        localStorage.setItem('pesudokuGame', JSON.stringify(gameData));
+    };
+
+    const checkAllCellsCorrect = (userSolution, correctGrid) => {
+        for (let rowIndex = 0; rowIndex < correctGrid.length; rowIndex++) {
+            for (let colIndex = 0; colIndex < correctGrid[rowIndex].length; colIndex++) {
+                if (correctGrid[rowIndex][colIndex] !== userSolution[rowIndex][colIndex]) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    };
+
+    const highlightCells = (correctGrid, userSolution) => {
+        correctGrid.forEach((row, rowIndex) => {
+            row.forEach((cell, colIndex) => {
+                const cellDiv = document.querySelector(`.grid-cell[data-row="${rowIndex}"][data-col="${colIndex}"]`);
+                if (cellDiv) {
+                    const cellContent = cellDiv.querySelector(".grid-cell-content");
+                    const input = cellDiv.querySelector("input");
+                    if (input) {
+                        if (parseInt(input.value) === cell) {
+                            cellContent.textContent = cell;
+                            cellDiv.classList.add("correct");
+                            cellDiv.classList.remove("incorrect");
+                            input.remove();
+                            userSolution[rowIndex][colIndex] = cell;  // Update correct answer in userSolution
+                        } else {
+                            cellDiv.classList.add("incorrect");
+                        }
+                    }
+                }
+            });
         });
+    };
 
-    function displayPuzzle(grid) {
+    const showEndGameMessage = (message) => {
+        clearInterval(timerInterval);
+        document.getElementById("check-button").style.display = "none";
+        document.getElementById("share-button").style.display = "block";
+        document.getElementById("share-button").classList.add("glow"); // Add the glow effect
+        document.getElementById("result").textContent = message;
+        document.querySelectorAll("input").forEach(input => input.disabled = true);
+
+        const gridEmojis = generateGridEmojis();
+        const timeTaken = Math.floor((new Date() - startTime) / 1000);
+        const totalGuesses = 5;
+        const guessesUsed = totalGuesses - guessesLeft;
+        const numberEmojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣'];
+        const guessStatus = numberEmojis.map((emoji, index) => index < guessesUsed ? '❌' : emoji).join('');
+        const shareText = `${gridEmojis}\nGuesses: ${guessStatus}\nTime: ${formatTime(timeTaken)}`;
+
+        document.getElementById("share-button").onclick = () => {
+            if (navigator.share) {
+                navigator.share({
+                    title: `Pseudoku — #${puzzleID}`,
+                    text: shareText
+                }).catch(err => console.error('Error sharing:', err));
+            } else {
+                navigator.clipboard.writeText(shareText).then(() => alert("Score copied to clipboard!"));
+            }
+        };
+    };
+
+    const generateGridEmojis = () => {
+        return currentPuzzle.answerGrid.map((row, rowIndex) =>
+            row.map((cell, colIndex) => {
+                const cellDiv = document.querySelector(`.grid-cell[data-row="${rowIndex}"][data-col="${colIndex}"]`);
+                if (cellDiv.classList.contains("preset")) return '⬛';
+                if (cellDiv.classList.contains("correct")) return '🟩';
+                if (cellDiv.classList.contains("incorrect")) return '🟥';
+                return '⬜'; // default for not attempted cells
+            }).join('')
+        ).join('\n');
+    };
+
+    const startTimer = () => {
+        const timerElement = document.getElementById("timer");
+        timerInterval = setInterval(() => {
+            const timeTaken = Math.floor((new Date() - startTime) / 1000);
+            timerElement.textContent = `Time: ${formatTime(timeTaken)}`;
+        }, 1000);
+    };
+
+    const formatTime = (seconds) => `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`;
+
+    const displayPuzzle = (grid) => {
         const gridContainer = document.getElementById("grid-container");
         gridContainer.innerHTML = '';
-
-        const size = grid.length;
-        gridContainer.style.gridTemplateColumns = `repeat(${size}, 1fr)`;  // Ensure the correct number of columns
+        gridContainer.style.gridTemplateColumns = `repeat(${grid[0].length}, 1fr)`;
 
         grid.forEach((row, rowIndex) => {
             row.forEach((cell, colIndex) => {
                 const cellDiv = document.createElement("div");
                 cellDiv.classList.add("grid-cell");
-                cellDiv.setAttribute("data-row", rowIndex);
-                cellDiv.setAttribute("data-col", colIndex);
+                cellDiv.dataset.row = rowIndex;
+                cellDiv.dataset.col = colIndex;
 
                 const cellContent = document.createElement("div");
                 cellContent.classList.add("grid-cell-content");
@@ -39,13 +156,21 @@ document.addEventListener("DOMContentLoaded", function () {
                     cellDiv.classList.add("preset");
                 } else {
                     const input = document.createElement("input");
-                    input.setAttribute("type", "number");
-                    input.setAttribute("min", "1");
-                    input.setAttribute("max", "9");
-                    input.setAttribute("inputmode", "decimal")
-                    input.setAttribute("pattern", "\\d*");
-                    input.setAttribute("data-row", rowIndex);
-                    input.setAttribute("data-col", colIndex);
+                    input.type = "text";
+                    input.min = "1";
+                    input.max = "9";
+                    input.inputMode = "decimal";
+                    input.maxLength = "1";
+                    input.pattern = "\\d*";
+                    input.dataset.row = rowIndex;
+                    input.dataset.col = colIndex;
+                    input.addEventListener('input', (e) => handleInput(e, rowIndex, colIndex));
+
+                    // Populate input with user solution if available
+                    if (window.userSolution && window.userSolution[rowIndex][colIndex] !== null) {
+                        input.value = window.userSolution[rowIndex][colIndex];
+                    }
+
                     cellContent.appendChild(input);
                 }
 
@@ -56,9 +181,104 @@ document.addEventListener("DOMContentLoaded", function () {
 
         updateResultMessage(`You have ${guessesLeft} guesses left.`);
         updateErrorCount();
-    }
+    };
 
-    function displayClues(puzzle) {
+    const handleInput = (e, rowIndex, colIndex) => {
+        if (e.target.value.length === 1) {
+            const nextCell = getNextBlankCell(rowIndex, colIndex);
+            if (nextCell) {
+                nextCell.focus();
+            }
+        }
+    };
+
+    const getNextBlankCell = (rowIndex, colIndex) => {
+        const inputs = Array.from(document.querySelectorAll("input"));
+        const currentIndex = inputs.findIndex(input => input.dataset.row == rowIndex && input.dataset.col == colIndex);
+
+        // Search for the next blank cell starting from the current index
+        for (let i = currentIndex + 1; i < inputs.length; i++) {
+            if (inputs[i].value === '') {
+                return inputs[i];
+            }
+        }
+
+        // If no blank cell is found, loop back to the beginning of the grid
+        for (let i = 0; i < currentIndex; i++) {
+            if (inputs[i].value === '') {
+                return inputs[i];
+            }
+        }
+
+        // If no blank cell is found at all (which should not happen in a valid game), return null
+        return null;
+    };
+
+    window.checkSolution = () => {
+        const checkButton = document.getElementById("check-button");
+        checkButton.disabled = true;  // Disable the button
+
+        const inputs = document.querySelectorAll("input");
+        const size = currentPuzzle.displayGrid.length;
+
+        // Initialize userSolution with pre-filled cells and retain correct answers
+        if (!window.userSolution) {
+            window.userSolution = Array.from({ length: size }, (_, rowIndex) =>
+                currentPuzzle.displayGrid[rowIndex].map((cell, colIndex) =>
+                    cell !== null ? cell : null
+                )
+            );
+        }
+
+        // Update userSolution with user inputs
+        inputs.forEach(input => {
+            const rowIndex = parseInt(input.dataset.row);
+            const colIndex = parseInt(input.dataset.col);
+            window.userSolution[rowIndex][colIndex] = parseInt(input.value);
+        });
+
+        // Debugging logs
+        console.log('User Solution:', window.userSolution);
+        console.log('Correct Grid:', currentPuzzle.answerGrid);
+
+        highlightCells(currentPuzzle.answerGrid, window.userSolution);
+
+        if (checkAllCellsCorrect(window.userSolution, currentPuzzle.answerGrid)) {
+            updateResultMessage("Congratulations! You've solved the puzzle!");
+            showEndGameMessage("Congratulations! You've solved the puzzle!");
+        } else {
+            guessesLeft--;
+            updateErrorCount();
+            if (guessesLeft > 0) {
+                updateResultMessage(`Incorrect! You have ${guessesLeft} guesses left.`);
+                // Re-enable the button after 3 seconds
+                setTimeout(() => {
+                    checkButton.disabled = false;
+                }, 3000);
+            } else {
+                updateResultMessage("No more guesses left. Try again tomorrow!");
+                showEndGameMessage("No more guesses left. Try again tomorrow!");
+            }
+        }
+
+        saveGame(); // Save the game after each check
+    };
+
+    fetch('grids.json')
+        .then(response => response.json())
+        .then(puzzles => {
+            currentPuzzle = puzzles.find(puzzle => puzzle.id === puzzleID);
+            if (!loadGame()) {
+                startTime = new Date();
+                window.userSolution = Array.from({ length: currentPuzzle.displayGrid.length }, () => Array(currentPuzzle.displayGrid.length).fill(null));
+                displayPuzzle(currentPuzzle.displayGrid);
+                displayClues(currentPuzzle);
+                startTimer();
+                console.log(currentPuzzle);
+            }
+        });
+
+    const displayClues = (puzzle) => {
         const rowCluesContainer = document.getElementById("row-clues");
         const colCluesContainer = document.getElementById("col-clues");
         rowCluesContainer.innerHTML = '';
@@ -70,200 +290,23 @@ document.addEventListener("DOMContentLoaded", function () {
         puzzle.colRules.forEach((rule, index) => {
             colCluesContainer.innerHTML += `<tr><td>Column ${index + 1}</td><td>${getReadableRule(rule)}</td></tr>`;
         });
-    }
-
-    function getReadableRule(rule) {
-        switch (rule.rule) {
-            case 'palindromic':
-                return 'Numbers form a palindrome';
-            case 'sum_even':
-                return 'Sum of numbers is even';
-            case 'sum_odd':
-                return 'Sum of numbers is odd';
-            case 'above_threshold':
-                return `All numbers are greater than ${rule.target}`;
-            case 'below_threshold':
-                return `All numbers are less than ${rule.target}`;
-            case 'even':
-                return 'All numbers are even';
-            case 'odd':
-                return 'All numbers are odd';
-            case 'increasing':
-                return 'Numbers are in increasing order';
-            case 'decreasing':
-                return 'Numbers are in decreasing order';
-            case 'sum':
-                return `Sum of numbers is ${rule.target}`;
-            default:
-                return 'Unknown rule';
-        }
-    }
-
-    function updateResultMessage(message) {
-        document.getElementById("result").textContent = message;
-    }
-
-    function updateErrorCount() {
-        const totalGuesses = 5;
-        const correctGuesses = totalGuesses - guessesTaken;
-        const errorsLeft = totalGuesses - guessesLeft;
-        const checkmarkEmoji = '✅';
-        const errorEmoji = '❌';
-        document.getElementById("errors").textContent = `Errors: ${checkmarkEmoji.repeat(correctGuesses)}${errorEmoji.repeat(errorsLeft)}`;
-    }
-
-    window.checkSolution = function () {
-        const inputs = document.querySelectorAll("input");
-        const userSolution = Array.from({ length: currentPuzzle.displayGrid.length }, () => Array(currentPuzzle.displayGrid.length).fill(null));
-        guessesTaken++;
-
-        inputs.forEach(input => {
-            const row = input.getAttribute("data-row");
-            const col = input.getAttribute("data-col");
-            userSolution[row][col] = parseInt(input.value);
-        });
-
-        const grid = userSolution.map((row, rowIndex) =>
-            row.map((cell, colIndex) => cell !== null ? cell : currentPuzzle.answerGrid[rowIndex][colIndex])
-        );
-
-        const allCellsCorrect = checkAllCellsCorrect(userSolution, currentPuzzle.answerGrid);
-        const isValid = validateGrid(grid, currentPuzzle.rowRules, currentPuzzle.colRules);
-
-        highlightCells(grid, currentPuzzle.answerGrid, userSolution);
-
-        if (allCellsCorrect && isValid) {
-            updateResultMessage("Congratulations! You've solved the puzzle!");
-            showEndGameMessage("Congratulations! You've solved the puzzle!", guessesTaken);
-        } else {
-            guessesLeft--;
-            updateErrorCount();
-            if (guessesLeft > 0) {
-                updateResultMessage(`Incorrect! You have ${guessesLeft} guesses left.`);
-            } else {
-                updateResultMessage("No more guesses left. Try again tomorrow!");
-                showEndGameMessage("No more guesses left. Try again tomorrow!", guessesTaken);
-            }
-        }
     };
 
-    function validateGrid(grid, rowRules, colRules) {
+    const getReadableRule = (rule) => {
         const rules = {
-            sum: (arr, target) => arr.reduce((a, b) => a + b, 0) === target,
-            increasing: arr => arr.every((val, i, a) => !i || val >= a[i - 1]),
-            decreasing: arr => arr.every((val, i, a) => !i || val <= a[i - 1]),
-            even: arr => arr.every(val => val % 2 === 0),
-            odd: arr => arr.every(val => val % 2 !== 0),
-            palindromic: arr => arr.join('') === arr.slice().reverse().join(''),
-            above_threshold: (arr, target) => arr.every(val => val > target),
-            below_threshold: (arr, target) => arr.every(val => val < target),
+            palindromic: 'Numbers form a palindrome',
+            sum_even: 'Sum of numbers is even',
+            sum_odd: 'Sum of numbers is odd',
+            above_threshold: `All numbers are greater than ${rule.target}`,
+            below_threshold: `All numbers are less than ${rule.target}`,
+            even: 'All numbers are even',
+            odd: 'All numbers are odd',
+            increasing: 'Numbers are in increasing order',
+            decreasing: 'Numbers are in decreasing order',
+            sum: `Sum of numbers is ${rule.target}`
         };
+        return rules[rule.rule] || 'Unknown rule';
+    };
 
-        return grid.every((row, i) => {
-            const rule = rowRules[i];
-            return rules[rule.rule] ? rules[rule.rule](row, rule.target) : true;
-        }) && grid[0].map((_, colIndex) => grid.map(row => row[colIndex]))
-            .every((col, i) => {
-                const rule = colRules[i];
-                return rules[rule.rule] ? rules[rule.rule](col, rule.target) : true;
-            });
-    }
-
-    function checkAllCellsCorrect(userSolution, correctGrid) {
-        return userSolution.every((row, rowIndex) => row.every((cell, colIndex) => cell === correctGrid[rowIndex][colIndex]));
-    }
-
-    function highlightCells(userGrid, correctGrid, userSolution) {
-        userGrid.forEach((row, rowIndex) => {
-            row.forEach((cell, colIndex) => {
-                const input = document.querySelector(`input[data-row="${rowIndex}"][data-col="${colIndex}"]`);
-                const cellDiv = document.querySelector(`.grid-cell[data-row="${rowIndex}"][data-col="${colIndex}"]`);
-                if (input) {
-                    if (userSolution[rowIndex][colIndex] === correctGrid[rowIndex][colIndex]) {
-                        cellDiv.querySelector(".grid-cell-content").textContent = userSolution[rowIndex][colIndex];
-                        cellDiv.classList.add("correct");
-                        cellDiv.classList.remove("incorrect");
-                        input.remove();
-                    } else {
-                        cellDiv.classList.add("incorrect");
-                    }
-                }
-            });
-        });
-    }
-
-    function showEndGameMessage(message, guessesTaken) {
-        clearInterval(timerInterval);
-
-        const formattedTime = formatTime(Math.floor((new Date() - startTime) / 1000));
-
-        replaceIncorrectCells();
-
-        const gridEmojis = generateGridEmojis();
-        const guessesEmoji = '❌'.repeat(guessesTaken);
-        const timeEmoji = `⏱️${formattedTime}`;
-
-        const shareText = `${message}\nGrid:\n${gridEmojis}\nGuesses: ${guessesEmoji}\nTime: ${timeEmoji}`;
-
-        // Update the footer with the end message
-        const resultElement = document.getElementById("result");
-        resultElement.textContent = message;
-
-        // Hide the check solution button
-        const checkButton = document.getElementById("check-button");
-        checkButton.style.display = "none";
-
-        // Show the share button
-        const shareButton = document.getElementById("share-button");
-        shareButton.style.display = "block";
-        shareButton.onclick = function () {
-            if (navigator.share) {
-                navigator.share({
-                    title: "Cryptic Grid Game",
-                    text: shareText
-                });
-            } else {
-                navigator.clipboard.writeText(shareText).then(() => {
-                    alert("Score copied to clipboard!");
-                });
-            }
-        };
-    }
-
-    function replaceIncorrectCells() {
-        document.querySelectorAll("input").forEach(input => {
-            const row = input.getAttribute("data-row");
-            const col = input.getAttribute("data-col");
-            const cellDiv = document.querySelector(`.grid-cell[data-row="${row}"][data-col="${col}"]`);
-            cellDiv.querySelector(".grid-cell-content").textContent = currentPuzzle.answerGrid[row][col];
-            cellDiv.classList.add("incorrect");
-            input.remove();
-        });
-    }
-
-    function generateGridEmojis() {
-        return currentPuzzle.answerGrid.map((row, rowIndex) =>
-            row.map((cell, colIndex) => {
-                const cellDiv = document.querySelector(`.grid-cell[data-row="${rowIndex}"][data-col="${colIndex}"]`);
-                if (cellDiv.classList.contains("preset")) return '⬛';
-                if (cellDiv.classList.contains("correct")) return '🟩';
-                if (cellDiv.classList.contains("incorrect")) return '🟥';
-            }).join('')
-        ).join('\n');
-    }
-
-    function startTimer() {
-        const timerElement = document.getElementById("timer");
-        timerInterval = setInterval(() => {
-            const currentTime = new Date();
-            const timeTaken = Math.floor((currentTime - startTime) / 1000);
-            timerElement.textContent = `Time: ${formatTime(timeTaken)}`;
-        }, 1000);
-    }
-
-    function formatTime(seconds) {
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = seconds % 60;
-        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-    }
+    setInterval(saveGame, 60000); // Save the game every 60 seconds
 });

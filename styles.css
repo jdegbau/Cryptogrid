@@ -48,6 +48,10 @@ body {
     font-size: 1rem;
 }
 
+.guess-icon {
+    margin: 0 2px;
+}
+
 .main {
     display: flex;
     flex-direction: row;
@@ -201,5 +205,89 @@ body {
     .main {
         flex-direction: column;
         align-items: center;
+    }
+}
+
+/* General button styles */
+.button {
+    padding: 10px 20px;
+    background: #6200ea;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.3s, box-shadow 0.3s;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+/* Hover state */
+.button:hover {
+    background: #3700b3;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transform: scale(1.05);
+}
+
+/* Active state */
+.button:active {
+    background: #6200ea;
+    transform: scale(1);
+    box-shadow: none;
+}
+
+/* Disabled state */
+.button:disabled {
+    background: #ccc;
+    color: #666;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Specific styles for check and share buttons */
+.check-btn, .share-btn {
+    margin: 10px 0;
+}
+
+/* Share button styles */
+.share-btn {
+    display: none; /* Initially hidden */
+    background: #ff4081;
+    color: #fff;
+    font-size: 1.2rem;
+    padding: 15px 25px;
+    border-radius: 10px;
+    animation: bounceIn 0.5s ease;
+    box-shadow: 0 0 10px rgba(255, 64, 129, 0.5);
+}
+
+/* Keyframes for bounce-in animation */
+@keyframes bounceIn {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    60% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Glow effect */
+.share-btn.glow {
+    animation: glow 1.5s infinite;
+}
+
+@keyframes glow {
+    0% {
+        box-shadow: 0 0 5px rgba(255, 64, 129, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(255, 64, 129, 1);
+    }
+    100% {
+        box-shadow: 0 0 5px rgba(255, 64, 129, 0.5);
     }
 }
