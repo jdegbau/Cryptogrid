@@ -68,12 +68,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const guessesUsed = totalGuesses - guessesLeft;
         const numberEmojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣'];
         const guessStatus = numberEmojis.map((emoji, index) => index < guessesUsed ? '❌' : emoji).join('');
-        const shareText = `${gridEmojis}\nGuesses: ${guessStatus}\nTime: ${formatTime(timeTaken)}`;
+        const shareText = `Pseudoku — #${puzzleID}\n\n${gridEmojis}\nGuesses: ${guessStatus}\nTime: ${formatTime(timeTaken)}`;
 
         document.getElementById("share-button").onclick = () => {
             if (navigator.share) {
                 navigator.share({
-                    title: `Pseudoku — #${puzzleID}`,
                     text: shareText
                 }).catch(err => console.error('Error sharing:', err));
             } else {
