@@ -1,6 +1,28 @@
 document.addEventListener("DOMContentLoaded", () => {
     let currentPuzzle, guessesLeft = 5, startTime, timerInterval;
-    const puzzleID = 1;
+
+    // Set the arbitrary start date (e.g., today)
+    const startDate = new Date('Tues May 21 2024 00:00:00 GMT-0500 (Central Daylight Time)'); // Replace with your chosen start date
+
+    // Get the current date and convert it to CST
+    const today = new Date();
+    const cstOffset = -5 * 60; // CST is UTC-5
+    const todayCST = new Date(today.getTime() + (today.getTimezoneOffset() + cstOffset) * 60000);
+
+    // Set the time to the most recent midnight
+    todayCST.setHours(0, 0, 0, 0);
+
+    // Calculate the number of days since the start date
+    const timeDifference = todayCST.getTime() - startDate.getTime();
+    const daysSinceStart = Math.ceil(timeDifference / (1000 * 3600 * 24));
+    console.log(daysSinceStart)
+
+    // Total number of puzzle IDs available (assuming 10 in this example)
+    const totalPuzzleIds = 10;
+
+    // Set the puzzleID to the number of days since the start date, looping if necessary
+    const puzzleID = ((daysSinceStart) % totalPuzzleIds) + 1;
+    console.log(puzzleID)
 
     const updateResultMessage = (message) => {
         document.getElementById("result").textContent = message;
@@ -19,10 +41,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const checkAllCellsCorrect = (userSolution, correctGrid) => {
         for (let rowIndex = 0; rowIndex < correctGrid.length; rowIndex++) {
             for (let colIndex = 0; colIndex < correctGrid[rowIndex].length; colIndex++) {
-                // Debugging logs
-                console.log(`Checking cell [${rowIndex}][${colIndex}]: userSolution = ${userSolution[rowIndex][colIndex]}, correctGrid = ${correctGrid[rowIndex][colIndex]}`);
-
-                // Check if the user's solution matches the correct grid
                 if (correctGrid[rowIndex][colIndex] !== userSolution[rowIndex][colIndex]) {
                     return false;
                 }
@@ -157,32 +175,28 @@ document.addEventListener("DOMContentLoaded", () => {
         const inputs = Array.from(document.querySelectorAll("input"));
         const currentIndex = inputs.findIndex(input => input.dataset.row == rowIndex && input.dataset.col == colIndex);
 
-        // Search for the next blank cell starting from the current index
         for (let i = currentIndex + 1; i < inputs.length; i++) {
             if (inputs[i].value === '') {
                 return inputs[i];
             }
         }
 
-        // If no blank cell is found, loop back to the beginning of the grid
         for (let i = 0; i < currentIndex; i++) {
             if (inputs[i].value === '') {
                 return inputs[i];
             }
         }
 
-        // If no blank cell is found at all (which should not happen in a valid game), return null
         return null;
     };
 
     window.checkSolution = () => {
         const checkButton = document.getElementById("check-button");
-        checkButton.disabled = true;  // Disable the button
+        checkButton.disabled = true;
 
         const inputs = document.querySelectorAll("input");
         const size = currentPuzzle.displayGrid.length;
 
-        // Initialize userSolution with pre-filled cells and retain correct answers
         if (!window.userSolution) {
             window.userSolution = Array.from({ length: size }, (_, rowIndex) =>
                 currentPuzzle.displayGrid[rowIndex].map((cell, colIndex) =>
@@ -191,16 +205,11 @@ document.addEventListener("DOMContentLoaded", () => {
             );
         }
 
-        // Update userSolution with user inputs
         inputs.forEach(input => {
             const rowIndex = parseInt(input.dataset.row);
             const colIndex = parseInt(input.dataset.col);
             window.userSolution[rowIndex][colIndex] = parseInt(input.value);
         });
-
-        // Debugging logs
-        console.log('User Solution:', window.userSolution);
-        console.log('Correct Grid:', currentPuzzle.answerGrid);
 
         highlightCells(currentPuzzle.answerGrid, window.userSolution);
 
@@ -212,7 +221,6 @@ document.addEventListener("DOMContentLoaded", () => {
             updateErrorCount();
             if (guessesLeft > 0) {
                 updateResultMessage(`Incorrect! You have ${guessesLeft} guesses left.`);
-                // Re-enable the button after 3 seconds
                 setTimeout(() => {
                     checkButton.disabled = false;
                 }, 3000);
