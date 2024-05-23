@@ -21,34 +21,68 @@
         </header>
         <main class="main">
             <section class="clues-section" id="clues-container">
-                <table class="clues-table" id="clues-table">
-                    <thead>
-                        <tr>
-                            <th>Row</th>
-                            <th>Clue</th>
-                        </tr>
-                    </thead>
-                    <tbody id="row-clues">
-                        <!-- Row clues will be inserted here -->
-                    </tbody>
-                    <thead>
-                        <tr>
-                            <th>Column</th>
-                            <th>Clue</th>
-                        </tr>
-                    </thead>
-                    <tbody id="col-clues">
-                        <!-- Column clues will be inserted here -->
-                    </tbody>
-                </table>
+                <div class="tabs">
+                    <button class="tab-button active" id="clues-tab" onclick="showClues()">Clues</button>
+                    <button class="tab-button" id="rules-tab" onclick="showRules()">How to Play</button>
+                </div>
+                <div class="content">
+                    <table class="clues-table" id="clues-table">
+                        <thead>
+                            <tr>
+                                <th>Row</th>
+                                <th>Clue</th>
+                            </tr>
+                        </thead>
+                        <tbody id="row-clues">
+                            <!-- Row clues will be inserted here -->
+                        </tbody>
+                        <thead>
+                            <tr>
+                                <th>Column</th>
+                                <th>Clue</th>
+                            </tr>
+                        </thead>
+                        <tbody id="col-clues">
+                            <!-- Column clues will be inserted here -->
+                        </tbody>
+                    </table>
+                    <section class="game-rules-section" id="game-rules-container">
+                        <div class="rules-content">
+                            <p>Fill in the grid with numbers 1 to 9.</p>
+                            <p>Use the provided clues to determine the correct numbers. You have five guesses.</p>
+                            <p>Click the "Submit Guess" button when you think you've solved it.</p>
+                            <p>Cells will highlight based on your guess accuracy:</p>
+                            <div class="emoji-explanation">
+                                <span>🟦</span>
+                                <span>Pre-filled number</span>
+                            </div>
+                            <div class="emoji-explanation">
+                                <span>🟩</span>
+                                <span>Number is correct</span>
+                            </div>
+                            <div class="emoji-explanation">
+                                <span>🟥</span>
+                                <span>Number is incorrect</span>
+                            </div>
+                            <div class="emoji-explanation">
+                                <span>🟨</span>
+                                <span>Number is within 2 of the correct number</span>
+                            </div>
+                        </div>
+                    </section>
+                </div>
             </section>
-            <section class="grid-section" id="grid-container"></section>
+            <section class="grid-section" id="grid-container">
+                <div id="grid-cells" class="grid-cells">
+                    <!-- Labels and cells will be inserted here -->
+                </div>
+                <section class="controls-section">
+                    <button class="button check-btn" id="check-button">Submit Guess</button>
+                    <button class="button share-btn" id="share-button" style="display: none;">Share Your Score</button>
+                    <p class="result" id="result"></p>
+                </section>
+            </section>
         </main>
-        <footer class="footer">
-            <button class="button check-btn" id="check-button" onclick="checkSolution()">Submit Guess</button>
-            <button class="button share-btn" id="share-button">Share Your Score</button>
-            <p class="result" id="result"></p>
-        </footer>
     </div>
     <script src="crypticGrid.js"></script>
 </body>

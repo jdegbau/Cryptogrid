@@ -3,70 +3,70 @@
     "id": 1,
     "answerGrid": [
       [
+        3,
         9,
-        9,
-        8,
-        7
+        5,
+        8
       ],
       [
-        5,
-        7,
-        5,
+        1,
+        4,
+        2,
         1
       ],
       [
-        4,
-        6,
-        4,
-        4
+        7,
+        7,
+        7,
+        2
       ],
       [
-        2,
-        7,
         1,
-        8
+        7,
+        6,
+        6
       ]
     ],
     "displayGrid": [
       [
+        3,
         9,
-        9,
-        8,
+        5,
         null
       ],
       [
-        5,
+        null,
+        null,
+        null,
+        1
+      ],
+      [
         7,
-        5,
-        null
+        7,
+        null,
+        2
       ],
       [
-        null,
-        null,
-        null,
-        null
-      ],
-      [
-        2,
-        null,
         1,
-        8
+        null,
+        6,
+        6
       ]
     ],
     "rowRules": [
       {
+        "rule": "sum",
+        "target": 25
+      },
+      {
+        "rule": "below_threshold",
+        "target": 5
+      },
+      {
         "rule": "sum_odd"
       },
       {
-        "rule": "sum",
-        "target": 18
-      },
-      {
         "rule": "sum_even"
-      },
-      {
-        "rule": "sum",
-        "target": 18
       }
     ],
     "colRules": [
@@ -74,15 +74,14 @@
         "rule": "sum_even"
       },
       {
-        "rule": "sum",
-        "target": 29
+        "rule": "majority_odd",
+        "target": 3
       },
       {
-        "rule": "decreasing"
+        "rule": "sum_even"
       },
       {
-        "rule": "sum",
-        "target": 20
+        "rule": "sum_odd"
       }
     ]
   },
@@ -90,69 +89,70 @@
     "id": 2,
     "answerGrid": [
       [
-        2,
-        6,
-        3,
-        7
-      ],
-      [
+        4,
+        9,
         8,
-        2,
-        5,
         8
       ],
       [
-        8,
+        9,
+        4,
         1,
-        1,
-        2
+        8
       ],
       [
+        3,
         2,
+        1,
+        5
+      ],
+      [
         6,
-        9,
-        4
+        1,
+        3,
+        2
       ]
     ],
     "displayGrid": [
       [
+        4,
         null,
-        6,
         null,
-        7
+        8
       ],
       [
-        8,
+        9,
         null,
-        5,
+        null,
+        8
+      ],
+      [
+        3,
+        null,
+        1,
         null
       ],
       [
-        8,
+        null,
         1,
         null,
         2
-      ],
-      [
-        2,
-        6,
-        9,
-        null
       ]
     ],
     "rowRules": [
       {
+        "rule": "sum",
+        "target": 29
+      },
+      {
         "rule": "sum_even"
       },
       {
-        "rule": "sum_odd"
+        "rule": "majority_odd",
+        "target": 3
       },
       {
-        "rule": "sum",
-        "target": 12
-      },
-      {
-        "rule": "sum_odd"
+        "rule": "sum_even"
       }
     ],
     "colRules": [
@@ -160,14 +160,14 @@
         "rule": "sum_even"
       },
       {
+        "rule": "unique_digits"
+      },
+      {
         "rule": "sum_odd"
       },
       {
-        "rule": "sum_even"
-      },
-      {
-        "rule": "sum",
-        "target": 21
+        "rule": "majority_even",
+        "target": 3
       }
     ]
   },
@@ -175,66 +175,66 @@
     "id": 3,
     "answerGrid": [
       [
+        5,
         9,
-        5,
-        5,
-        2
-      ],
-      [
         2,
-        8,
-        7,
-        1
+        5
       ],
       [
-        8,
-        9,
-        5,
-        4
-      ],
-      [
-        9,
-        8,
         4,
-        1
+        3,
+        3,
+        9
+      ],
+      [
+        7,
+        2,
+        5,
+        6
+      ],
+      [
+        6,
+        7,
+        6,
+        3
       ]
     ],
     "displayGrid": [
       [
-        null,
         5,
-        5,
-        2
-      ],
-      [
+        9,
         2,
-        8,
-        7,
         null
       ],
       [
+        4,
         null,
-        9,
         null,
-        4
+        9
       ],
       [
         null,
+        2,
+        5,
+        6
+      ],
+      [
         null,
-        4,
+        7,
+        6,
         null
       ]
     ],
     "rowRules": [
       {
-        "rule": "decreasing"
+        "rule": "sum_odd"
+      },
+      {
+        "rule": "sum_odd"
       },
       {
         "rule": "sum",
-        "target": 18
-      },
-      {
-        "rule": "sum_even"
+        "target": 20
       },
       {
         "rule": "sum_even"
@@ -242,17 +242,16 @@
     ],
     "colRules": [
       {
-        "rule": "sum_even"
+        "rule": "unique_digits"
       },
       {
-        "rule": "sum_even"
+        "rule": "unique_digits"
       },
       {
-        "rule": "sum_odd"
+        "rule": "increasing"
       },
       {
-        "rule": "below_threshold",
-        "target": 5
+        "rule": "unique_digits"
       }
     ]
   },
@@ -260,161 +259,60 @@
     "id": 4,
     "answerGrid": [
       [
-        5,
-        7,
         8,
-        8
-      ],
-      [
         3,
         8,
-        7,
-        8
+        6
       ],
       [
-        8,
         5,
-        2,
-        8
+        3,
+        1,
+        3
       ],
       [
-        9,
         8,
-        4,
-        1
+        7,
+        6,
+        3
+      ],
+      [
+        8,
+        2,
+        9,
+        9
       ]
     ],
     "displayGrid": [
       [
-        null,
-        7,
         8,
-        8
-      ],
-      [
+        3,
         null,
-        null,
-        7,
         null
       ],
       [
-        null,
         5,
         null,
-        null
+        null,
+        3
       ],
       [
-        9,
         8,
-        4,
+        7,
+        null,
+        3
+      ],
+      [
+        null,
+        2,
+        null,
         null
       ]
     ],
     "rowRules": [
       {
-        "rule": "increasing"
-      },
-      {
-        "rule": "sum_even"
-      },
-      {
-        "rule": "sum_odd"
-      },
-      {
-        "rule": "sum_even"
-      }
-    ],
-    "colRules": [
-      {
-        "rule": "sum",
-        "target": 25
-      },
-      {
-        "rule": "sum_even"
-      },
-      {
-        "rule": "sum",
-        "target": 21
-      },
-      {
-        "rule": "sum_odd"
-      }
-    ]
-  },
-  {
-    "id": 5,
-    "answerGrid": [
-      [
-        5,
-        5,
-        8,
-        5
-      ],
-      [
-        3,
-        1,
-        2,
-        1
-      ],
-      [
-        2,
-        3,
-        2,
-        7
-      ],
-      [
-        2,
-        1,
-        2,
-        2
-      ]
-    ],
-    "displayGrid": [
-      [
-        5,
-        5,
-        8,
-        null
-      ],
-      [
-        null,
-        1,
-        null,
-        null
-      ],
-      [
-        2,
-        null,
-        2,
-        null
-      ],
-      [
-        null,
-        null,
-        2,
-        2
-      ]
-    ],
-    "rowRules": [
-      {
-        "rule": "sum",
-        "target": 23
-      },
-      {
-        "rule": "below_threshold",
-        "target": 5
-      },
-      {
-        "rule": "sum_even"
-      },
-      {
-        "rule": "sum",
-        "target": 7
-      }
-    ],
-    "colRules": [
-      {
-        "rule": "sum_even"
+        "rule": "majority_even",
+        "target": 3
       },
       {
         "rule": "odd"
@@ -423,8 +321,110 @@
         "rule": "decreasing"
       },
       {
+        "rule": "sum_even"
+      }
+    ],
+    "colRules": [
+      {
+        "rule": "sum_odd"
+      },
+      {
+        "rule": "majority_odd",
+        "target": 3
+      },
+      {
+        "rule": "unique_digits"
+      },
+      {
         "rule": "sum",
-        "target": 15
+        "target": 21
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "answerGrid": [
+      [
+        3,
+        8,
+        3,
+        7
+      ],
+      [
+        3,
+        6,
+        6,
+        2
+      ],
+      [
+        9,
+        2,
+        7,
+        4
+      ],
+      [
+        4,
+        4,
+        3,
+        6
+      ]
+    ],
+    "displayGrid": [
+      [
+        null,
+        8,
+        3,
+        7
+      ],
+      [
+        3,
+        6,
+        null,
+        null
+      ],
+      [
+        9,
+        null,
+        null,
+        4
+      ],
+      [
+        4,
+        4,
+        null,
+        6
+      ]
+    ],
+    "rowRules": [
+      {
+        "rule": "sum_odd"
+      },
+      {
+        "rule": "sum_odd"
+      },
+      {
+        "rule": "unique_digits"
+      },
+      {
+        "rule": "majority_even",
+        "target": 3
+      }
+    ],
+    "colRules": [
+      {
+        "rule": "majority_odd",
+        "target": 3
+      },
+      {
+        "rule": "even"
+      },
+      {
+        "rule": "majority_odd",
+        "target": 3
+      },
+      {
+        "rule": "sum",
+        "target": 19
       }
     ]
   },
@@ -432,84 +432,85 @@
     "id": 6,
     "answerGrid": [
       [
-        4,
-        5,
-        4,
-        7
-      ],
-      [
-        9,
-        7,
-        3,
-        3
-      ],
-      [
-        5,
-        9,
+        6,
+        1,
         2,
         5
       ],
       [
-        5,
         7,
-        5,
-        3
+        8,
+        8,
+        2
+      ],
+      [
+        7,
+        6,
+        4,
+        6
+      ],
+      [
+        7,
+        3,
+        3,
+        6
       ]
     ],
     "displayGrid": [
       [
-        4,
-        5,
-        4,
-        null
-      ],
-      [
-        9,
-        7,
         null,
-        null
-      ],
-      [
         null,
-        9,
-        2,
+        null,
         5
       ],
       [
+        7,
+        8,
+        8,
+        null
+      ],
+      [
         null,
+        6,
         null,
-        5,
-        3
+        null
+      ],
+      [
+        7,
+        3,
+        3,
+        null
       ]
     ],
     "rowRules": [
       {
-        "rule": "sum_even"
+        "rule": "unique_digits"
       },
       {
-        "rule": "sum",
-        "target": 22
+        "rule": "majority_even",
+        "target": 3
       },
       {
         "rule": "sum_odd"
       },
       {
-        "rule": "sum_even"
+        "rule": "majority_odd",
+        "target": 3
       }
     ],
     "colRules": [
       {
-        "rule": "sum_odd"
-      },
-      {
-        "rule": "sum",
-        "target": 28
+        "rule": "increasing"
       },
       {
         "rule": "sum_even"
       },
       {
-        "rule": "odd"
+        "rule": "sum_odd"
+      },
+      {
+        "rule": "majority_even",
+        "target": 3
       }
     ]
   },
@@ -517,54 +518,54 @@
     "id": 7,
     "answerGrid": [
       [
-        9,
-        6,
-        9,
+        2,
+        4,
+        2,
         2
       ],
       [
-        4,
+        9,
+        1,
         6,
-        8,
-        8
-      ],
-      [
-        6,
-        8,
-        7,
         6
       ],
       [
-        6,
-        2,
+        5,
         3,
-        9
+        3,
+        4
+      ],
+      [
+        6,
+        1,
+        7,
+        7
       ]
     ],
     "displayGrid": [
       [
+        null,
+        4,
+        2,
+        2
+      ],
+      [
         9,
         null,
-        null,
-        null
-      ],
-      [
-        4,
-        null,
-        null,
-        8
-      ],
-      [
-        null,
-        8,
-        7,
-        null
-      ],
-      [
         6,
-        null,
+        6
+      ],
+      [
+        5,
         3,
-        9
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        7,
+        7
       ]
     ],
     "rowRules": [
@@ -572,30 +573,30 @@
         "rule": "sum_even"
       },
       {
-        "rule": "even"
-      },
-      {
-        "rule": "sum",
-        "target": 27
-      },
-      {
         "rule": "sum_even"
+      },
+      {
+        "rule": "majority_odd",
+        "target": 3
+      },
+      {
+        "rule": "sum_odd"
       }
     ],
     "colRules": [
       {
-        "rule": "sum",
-        "target": 25
+        "rule": "sum_even"
       },
       {
-        "rule": "even"
+        "rule": "majority_odd",
+        "target": 3
       },
       {
-        "rule": "sum",
-        "target": 27
+        "rule": "unique_digits"
       },
       {
-        "rule": "sum_odd"
+        "rule": "majority_even",
+        "target": 3
       }
     ]
   },
@@ -603,86 +604,84 @@
     "id": 8,
     "answerGrid": [
       [
+        5,
+        6,
         3,
-        8,
-        2,
+        8
+      ],
+      [
+        9,
+        4,
+        9,
         6
       ],
       [
-        8,
         1,
-        2,
+        3,
+        6,
         2
       ],
       [
-        8,
-        8,
-        5,
-        4
-      ],
-      [
-        8,
         2,
-        5,
-        9
+        6,
+        3,
+        1
       ]
     ],
     "displayGrid": [
       [
-        3,
-        8,
+        5,
         null,
-        null
+        null,
+        8
       ],
       [
-        8,
         null,
+        4,
         null,
+        6
+      ],
+      [
+        null,
+        3,
+        6,
         2
       ],
       [
-        null,
-        8,
-        5,
-        4
-      ],
-      [
-        null,
-        null,
-        5,
-        9
+        2,
+        6,
+        3,
+        null
       ]
     ],
     "rowRules": [
       {
-        "rule": "sum",
-        "target": 19
+        "rule": "alternating_parity"
+      },
+      {
+        "rule": "sum_even"
+      },
+      {
+        "rule": "unique_digits"
       },
       {
         "rule": "sum",
-        "target": 13
-      },
-      {
-        "rule": "sum",
-        "target": 25
-      },
-      {
-        "rule": "sum",
-        "target": 24
+        "target": 12
       }
     ],
     "colRules": [
       {
-        "rule": "increasing"
+        "rule": "unique_digits"
       },
       {
         "rule": "sum_odd"
       },
       {
-        "rule": "increasing"
+        "rule": "majority_odd",
+        "target": 3
       },
       {
-        "rule": "sum_odd"
+        "rule": "unique_digits"
       }
     ]
   },
@@ -690,85 +689,85 @@
     "id": 9,
     "answerGrid": [
       [
-        8,
+        7,
+        1,
         6,
-        2,
+        3
+      ],
+      [
+        8,
+        1,
+        6,
         7
       ],
       [
-        5,
+        4,
         8,
-        3,
+        8,
         2
       ],
       [
-        1,
-        6,
-        4,
-        4
-      ],
-      [
-        7,
+        8,
         9,
         4,
-        6
+        4
       ]
     ],
     "displayGrid": [
       [
         null,
-        6,
         null,
+        null,
+        null
+      ],
+      [
+        null,
+        1,
+        6,
         7
       ],
       [
-        null,
+        4,
         8,
-        3,
-        2
+        null,
+        null
       ],
       [
-        null,
-        6,
+        8,
+        9,
         null,
         4
-      ],
-      [
-        7,
-        null,
-        4,
-        null
       ]
     ],
     "rowRules": [
       {
-        "rule": "sum_odd"
-      },
-      {
         "rule": "sum",
-        "target": 18
-      },
-      {
-        "rule": "sum",
-        "target": 15
+        "target": 17
       },
       {
         "rule": "sum_even"
+      },
+      {
+        "rule": "sum_even"
+      },
+      {
+        "rule": "majority_even",
+        "target": 3
       }
     ],
     "colRules": [
       {
-        "rule": "sum",
-        "target": 21
-      },
-      {
-        "rule": "sum_odd"
+        "rule": "majority_even",
+        "target": 3
       },
       {
         "rule": "increasing"
       },
       {
-        "rule": "sum_odd"
+        "rule": "sum_even"
+      },
+      {
+        "rule": "sum_even"
       }
     ]
   },
@@ -776,77 +775,79 @@
     "id": 10,
     "answerGrid": [
       [
+        5,
         2,
-        2,
-        6,
+        5,
         8
+      ],
+      [
+        3,
+        4,
+        6,
+        9
       ],
       [
         7,
         6,
-        1,
-        9
+        4,
+        7
       ],
       [
-        1,
-        1,
+        7,
         3,
-        1
-      ],
-      [
-        5,
         2,
-        5,
-        2
+        4
       ]
     ],
     "displayGrid": [
       [
-        2,
-        2,
-        6,
-        null
+        5,
+        null,
+        5,
+        8
+      ],
+      [
+        null,
+        4,
+        null,
+        9
       ],
       [
         7,
         null,
-        1,
-        null
+        null,
+        7
       ],
       [
-        1,
-        1,
-        null,
-        null
-      ],
-      [
-        null,
+        7,
+        3,
         2,
-        null,
-        2
+        null
       ]
     ],
     "rowRules": [
       {
+        "rule": "alternating_parity"
+      },
+      {
         "rule": "sum",
-        "target": 18
-      },
-      {
-        "rule": "sum_odd"
-      },
-      {
-        "rule": "odd"
+        "target": 22
       },
       {
         "rule": "sum_even"
+      },
+      {
+        "rule": "unique_digits"
       }
     ],
     "colRules": [
       {
-        "rule": "sum_odd"
+        "rule": "sum",
+        "target": 22
       },
       {
-        "rule": "sum_odd"
+        "rule": "majority_even",
+        "target": 3
       },
       {
         "rule": "sum_odd"

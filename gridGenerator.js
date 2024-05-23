@@ -44,6 +44,12 @@ const determineBestRule = (arr) => {
     const isOdd = arr.every(num => num % 2 !== 0);
     const isIncreasing = arr.every((val, i, a) => !i || (val >= a[i - 1]));
     const isDecreasing = arr.every((val, i, a) => !i || (val <= a[i - 1]));
+    const uniqueDigits = new Set(arr).size === arr.length;
+    const alternatingOddEven = arr.every((num, i) => i % 2 === 0 ? num % 2 !== 0 : num % 2 === 0);
+    const evenCount = arr.filter(num => num % 2 === 0).length;
+    const oddCount = arr.filter(num => num % 2 !== 0).length;
+    const majorityEven = evenCount > arr.length / 2;
+    const majorityOdd = oddCount > arr.length / 2;
 
     const rules = [
         { rule: 'palindromic', check: () => isPalindrome(arr) },
@@ -55,8 +61,13 @@ const determineBestRule = (arr) => {
         { rule: 'odd', check: () => isOdd },
         { rule: 'increasing', check: () => isIncreasing },
         { rule: 'decreasing', check: () => isDecreasing },
-        { rule: 'sum', check: () => sum <= 30, target: sum }
+        { rule: 'unique_digits', check: () => uniqueDigits },
+        { rule: 'alternating_parity', check: () => alternatingOddEven },
+        { rule: 'majority_even', check: () => majorityEven, target: evenCount },
+        { rule: 'majority_odd', check: () => majorityOdd, target: oddCount }
     ];
+
+    const sumRule = { rule: 'sum', check: () => sum <= 30, target: sum };
 
     // Shuffle the rules array to randomize the order of rule checking
     for (let i = rules.length - 1; i > 0; i--) {
@@ -64,13 +75,10 @@ const determineBestRule = (arr) => {
         [rules[i], rules[j]] = [rules[j], rules[i]];
     }
 
-    for (const rule of rules) {
-        if (rule.check()) {
-            return { rule: rule.rule, target: rule.target };
-        }
-    }
+    // Randomly select a rule with a weighted probability
+    const selectedRule = Math.random() < 0.1 ? sumRule : rules.find(rule => rule.check());
 
-    return { rule: 'sum', target: sum }; // Default rule if none match
+    return selectedRule ? { rule: selectedRule.rule, target: selectedRule.target } : { rule: 'sum', target: sum };
 };
 
 const generatePuzzles = (numPuzzles, size) => {

@@ -15,7 +15,7 @@ body {
     flex-direction: column;
     align-items: center;
     width: 90%;
-    max-width: 800px;
+    max-width: 1000px; /* Increase max-width to accommodate two columns */
     background: #ffffff;
     border-radius: 10px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
@@ -54,22 +54,134 @@ body {
 
 .main {
     display: flex;
-    flex-direction: row;
     width: 100%;
     padding: 20px;
     background: #e8eaf6;
-    flex-wrap: wrap;
-    align-items: center; /* Align items to the center */
+    flex-wrap: nowrap;
+    align-items: flex-start;
+}
+
+.clues-section {
+    width: 30%; /* Fixed width for clues section */
+    background: #ffffff;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    height: 500px; /* Fixed height */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.tabs {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.tab-button {
+    background: #f0f0f0;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    transition: background 0.3s;
+    font-size: 1rem;
+    width: 50%;
+    border-bottom: 2px solid #6200ea;
+}
+
+.tab-button:hover {
+    background: #e0e0e0;
+}
+
+.tab-button.active {
+    background: #6200ea;
+    color: #ffffff;
+    border-bottom: none;
+}
+
+#row-clues tr, #col-clues tr {
+    font-size: .75rem;
+}
+
+.clues-table {
+    width: 100%;
+    border-collapse: collapse;
+    flex-grow: 1;
+}
+
+table#clues-table td, table#clues-table th {
+    text-align: center;
+}
+
+.clues-table th, .clues-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.clues-table th {
+    background: #6200ea;
+    color: #ffffff;
+    text-transform: uppercase;
+}
+
+.clues-table tbody tr:nth-child(even) {
+    background: #f0f0f0;
+}
+
+.game-rules-section {
+    display: none; /* Initially hidden */
+    padding: 0 20px;
+    text-align: center; /* Center the content horizontally */
+}
+
+.game-rules-section h2 {
+    text-align: center; /* Center the content horizontally */
+}
+
+.rules-content {
+    text-align: left; /* Align text to the left */
+    font-size: 1rem;
+}
+
+.rules-content p {
+    margin: 10px 0;
+}
+
+.rules-content .emoji-explanation {
+    display: flex;
+    align-items: center;
+    margin: 5px 0;
+}
+
+.rules-content .emoji-explanation span {
+    margin-left: 10px;
+    font-size: 1rem;
+    color: #333;
 }
 
 .grid-section {
+    width: 70%; /* Remaining width for grid section */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.grid-cells {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: auto repeat(4, minmax(75px, 1fr)) auto; /* Adjust to add extra column for labels */
+    grid-template-rows: auto repeat(4, minmax(75px, 1fr)) auto; /* Adjust to add extra row for labels */
     gap: 8px;
-    width: 100%;
-    max-width: 400px;
-    margin-bottom: 20px;
-    order: 2;
+}
+
+.grid-cell, .row-label, .column-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: #6200ea;
+    padding: 2px; /* Reduce padding */
+    margin: 0; /* Remove margin */
 }
 
 .grid-cell {
@@ -78,11 +190,27 @@ body {
     padding-top: 100%;
     background: #bbdefb;
     border-radius: 5px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2.5rem;
     transition: background 0.3s, transform 0.3s;
+}
+
+.grid-cell {
+    position: relative;
+    outline: 2px solid transparent; /* Add border to the cell */
+}
+
+.duplicate-message {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: red;
+    color: white;
+    padding: 2px 5px;
+    font-size: 0.75rem;
+    border-radius: 3px;
+    white-space: nowrap;
+    z-index: 1;
+    pointer-events: none;
 }
 
 .grid-cell-content {
@@ -94,6 +222,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 2.5rem;
 }
 
 .grid-cell input {
@@ -127,93 +256,18 @@ body {
     color: #f57f17;
 }
 
-.clues-section {
-    width: 100%;
-    max-width: 300px;
-    background: #ffffff;
-    padding: 20px;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    margin-right: 20px;
-    order: 1;
+.grid-cell.revealed .grid-cell-content {
+    background: #ffcc80; /* Light orange background */
+    color: #d84315; /* Dark orange text */
 }
 
-.clues-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-}
-
-.clues-table th, .clues-table td {
-    padding: 10px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-}
-
-.clues-table th {
-    background: #6200ea;
-    color: #ffffff;
-    text-transform: uppercase;
-}
-
-.clues-table tbody tr:nth-child(even) {
-    background: #f0f0f0;
-}
-
-.footer {
-    width: 100%;
-    background: #6200ea;
-    color: #ffffff;
-    padding: 20px;
-    text-align: center;
+.controls-section {
     display: flex;
     flex-direction: column;
     align-items: center;
+    margin-top: 20px;
 }
 
-.footer .check-btn, .footer .share-btn {
-    padding: 10px 20px;
-    background: #ffffff;
-    color: #6200ea;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background 0.3s, transform 0.3s;
-    margin: 10px 0;
-}
-
-.footer .check-btn:hover, .footer .share-btn:hover {
-    background: #f1f1f1;
-    transform: scale(1.05);
-}
-
-.footer .share-btn {
-    display: none; /* Initially hidden */
-}
-
-.footer .result {
-    margin-top: 15px;
-    font-size: 1rem;
-}
-
-/* Responsive Styles */
-@media (max-width: 768px) {
-    .grid-section {
-        order: 1; /* Makes grid appear first */
-    }
-
-    .clues-section {
-        order: 2; /* Makes clues appear second */
-        margin-top: 20px; /* Adds some spacing between the grid and clues */
-    }
-
-    .main {
-        flex-direction: column;
-        align-items: center;
-    }
-}
-
-/* General button styles */
 .button {
     padding: 10px 20px;
     background: #6200ea;
@@ -224,6 +278,7 @@ body {
     transition: background 0.3s, transform 0.3s, box-shadow 0.3s;
     font-size: 1rem;
     font-weight: 600;
+    margin: 10px 0;
 }
 
 /* Hover state */
@@ -248,51 +303,34 @@ body {
     opacity: 0.6;
 }
 
-/* Specific styles for check and share buttons */
-.check-btn, .share-btn {
-    margin: 10px 0;
+.result {
+    margin-top: 15px;
+    font-size: 1rem;
+    text-align: center;
 }
 
-/* Share button styles */
-.share-btn {
-    display: none; /* Initially hidden */
-    background: #ff4081;
-    color: #fff;
-    font-size: 1.2rem;
-    padding: 15px 25px;
-    border-radius: 10px;
-    animation: bounceIn 0.5s ease;
-    box-shadow: 0 0 10px rgba(255, 64, 129, 0.5);
-}
+/* Responsive Styles */
+@media (max-width: 768px) {
+    .container {
+        width: 100%;
+    }
 
-/* Keyframes for bounce-in animation */
-@keyframes bounceIn {
-    0% {
-        transform: scale(0);
-        opacity: 0;
+    .main {
+        flex-direction: column;
     }
-    60% {
-        transform: scale(1.2);
-        opacity: 1;
-    }
-    100% {
-        transform: scale(1);
-    }
-}
 
-/* Glow effect */
-.share-btn.glow {
-    animation: glow 1.5s infinite;
-}
+    section#clues-container {
+        order: 2;
+        height: auto;
+    }
 
-@keyframes glow {
-    0% {
-        box-shadow: 0 0 5px rgba(255, 64, 129, 0.5);
+    .content {
+        width: 100%;
     }
-    50% {
-        box-shadow: 0 0 20px rgba(255, 64, 129, 1);
-    }
-    100% {
-        box-shadow: 0 0 5px rgba(255, 64, 129, 0.5);
+
+    .clues-section, .game-rules-section, .grid-section, .controls-section {
+        width: 100%;
+        margin-right: 0;
+        margin-bottom: 20px;
     }
 }

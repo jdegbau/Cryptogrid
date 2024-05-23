@@ -1,5 +1,32 @@
+// Function to show the clues table
+const showClues = () => {
+    const cluesTable = document.getElementById('clues-table');
+    const gameRulesContainer = document.getElementById('game-rules-container');
+    const cluesTab = document.getElementById('clues-tab');
+    const rulesTab = document.getElementById('rules-tab');
+
+    cluesTable.style.display = 'table';
+    gameRulesContainer.style.display = 'none';
+    cluesTab.classList.add('active');
+    rulesTab.classList.remove('active');
+};
+
+// Function to show the game rules section
+const showRules = () => {
+    const cluesTable = document.getElementById('clues-table');
+    const gameRulesContainer = document.getElementById('game-rules-container');
+    const cluesTab = document.getElementById('clues-tab');
+    const rulesTab = document.getElementById('rules-tab');
+
+    cluesTable.style.display = 'none';
+    gameRulesContainer.style.display = 'block';
+    cluesTab.classList.remove('active');
+    rulesTab.classList.add('active');
+};
+
 document.addEventListener("DOMContentLoaded", () => {
     let currentPuzzle, guessesLeft = 5, startTime, timerInterval;
+    let guessHistory = {}; // Track guesses for each cell
 
     // Set the arbitrary start date (e.g., today)
     const startDate = new Date('Tues May 21 2024 00:00:00 GMT-0500 (Central Daylight Time)'); // Replace with your chosen start date
@@ -77,12 +104,12 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     };
 
-
     const showEndGameMessage = (message) => {
         clearInterval(timerInterval);
         document.getElementById("check-button").style.display = "none";
-        document.getElementById("share-button").style.display = "block";
-        document.getElementById("share-button").classList.add("glow"); // Add the glow effect
+        const shareButton = document.getElementById("share-button");
+        shareButton.style.display = "block";
+        shareButton.classList.add("glow"); // Add the glow effect
         document.getElementById("result").textContent = message;
         document.querySelectorAll("input").forEach(input => input.disabled = true);
 
@@ -94,7 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const guessStatus = numberEmojis.map((emoji, index) => index < guessesUsed ? '❌' : emoji).join('');
         const shareText = `Pseudoku — #${puzzleID}\n\n${gridEmojis}\nGuesses: ${guessStatus}\nTime: ${formatTime(timeTaken)}`;
 
-        document.getElementById("share-button").onclick = () => {
+        shareButton.onclick = () => {
             if (navigator.share) {
                 navigator.share({
                     text: shareText
@@ -109,9 +136,10 @@ document.addEventListener("DOMContentLoaded", () => {
         return currentPuzzle.answerGrid.map((row, rowIndex) =>
             row.map((cell, colIndex) => {
                 const cellDiv = document.querySelector(`.grid-cell[data-row="${rowIndex}"][data-col="${colIndex}"]`);
-                if (cellDiv.classList.contains("preset")) return '⬛';
+                if (cellDiv.classList.contains("preset")) return '🟦';
                 if (cellDiv.classList.contains("correct")) return '🟩';
                 if (cellDiv.classList.contains("incorrect")) return '🟥';
+                if (cellDiv.classList.contains("hint")) return '🟨';
                 return '⬜'; // default for not attempted cells
             }).join('')
         ).join('\n');
@@ -128,11 +156,34 @@ document.addEventListener("DOMContentLoaded", () => {
     const formatTime = (seconds) => `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`;
 
     const displayPuzzle = (grid) => {
-        const gridContainer = document.getElementById("grid-container");
+        const gridContainer = document.getElementById("grid-cells");
         gridContainer.innerHTML = '';
-        gridContainer.style.gridTemplateColumns = `repeat(${grid[0].length}, 1fr)`;
+
+        // Create a 6x6 grid to accommodate labels
+        const columnLabels = ['A', 'B', 'C', 'D'];
+        const rowLabels = ['1', '2', '3', '4'];
+
+        // Initialize guess history
+        guessHistory = {};
+
+        // Create the labels in the first and last row and column
+        gridContainer.appendChild(document.createElement('div')); // Empty top-left corner
+        columnLabels.forEach(label => {
+            const colLabel = document.createElement('div');
+            colLabel.classList.add('column-label');
+            colLabel.textContent = label;
+            gridContainer.appendChild(colLabel);
+        });
+        gridContainer.appendChild(document.createElement('div')); // Empty top-right corner
 
         grid.forEach((row, rowIndex) => {
+            // Add the row label on the left
+            const rowLabelLeft = document.createElement('div');
+            rowLabelLeft.classList.add('row-label');
+            rowLabelLeft.textContent = rowLabels[rowIndex];
+            gridContainer.appendChild(rowLabelLeft);
+
+            // Add the grid cells
             row.forEach((cell, colIndex) => {
                 const cellDiv = document.createElement("div");
                 cellDiv.classList.add("grid-cell");
@@ -155,13 +206,28 @@ document.addEventListener("DOMContentLoaded", () => {
                     input.dataset.row = rowIndex;
                     input.dataset.col = colIndex;
 
-                    // Ensure the input is a valid digit between 1 and 9
+                    // Initialize guess history for this cell
+                    const cellId = `${rowIndex}-${colIndex}`;
+                    guessHistory[cellId] = [];
+
+                    // Ensure the input is a valid digit between 1 and 9 and has not been guessed already
                     input.addEventListener('input', (e) => {
                         const value = e.target.value;
-                        if (!/^[1-9]$/.test(value)) {
-                            e.target.value = ''; // Clear the input if it's not a valid digit
+                        if (!/^[1-9]$/.test(value) || guessHistory[cellId].includes(value)) {
+                            e.target.value = ''; // Clear the input if it's not a valid digit or has been guessed already
+                            if (guessHistory[cellId].includes(value)) {
+                                const cellDiv = e.target.closest(".grid-cell");
+                                cellDiv.style.outline = '2px solid red'; // Show feedback for duplicate guess
+                                const duplicateMessage = document.createElement('div');
+                                duplicateMessage.className = 'duplicate-message';
+                                duplicateMessage.textContent = 'Already guessed!';
+                                cellDiv.appendChild(duplicateMessage);
+                                setTimeout(() => {
+                                    cellDiv.style.outline = '2px solid transparent';; // Clear feedback after a short delay
+                                    cellDiv.removeChild(duplicateMessage);
+                                }, 2000);
+                            }
                         }
-
                     });
 
                     input.addEventListener('input', (e) => handleInput(e, rowIndex, colIndex));
@@ -172,7 +238,22 @@ document.addEventListener("DOMContentLoaded", () => {
                 cellDiv.appendChild(cellContent);
                 gridContainer.appendChild(cellDiv);
             });
+
+            // Add the row label on the right
+            const rowLabelRight = document.createElement('div');
+            rowLabelRight.classList.add('row-label');
+            rowLabelRight.textContent = rowLabels[rowIndex];
+            gridContainer.appendChild(rowLabelRight);
         });
+
+        gridContainer.appendChild(document.createElement('div')); // Empty bottom-left corner
+        columnLabels.forEach(label => {
+            const colLabel = document.createElement('div');
+            colLabel.classList.add('column-label');
+            colLabel.textContent = label;
+            gridContainer.appendChild(colLabel);
+        });
+        gridContainer.appendChild(document.createElement('div')); // Empty bottom-right corner
 
         updateResultMessage(`You have ${guessesLeft} guesses left.`);
         updateErrorCount();
@@ -206,72 +287,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return null;
     };
 
-    window.checkSolution = () => {
-        const checkButton = document.getElementById("check-button");
-        checkButton.disabled = true;
-
-        const inputs = document.querySelectorAll("input");
-        const size = currentPuzzle.displayGrid.length;
-
-        if (!window.userSolution) {
-            window.userSolution = Array.from({ length: size }, (_, rowIndex) =>
-                currentPuzzle.displayGrid[rowIndex].map((cell, colIndex) =>
-                    cell !== null ? cell : null
-                )
-            );
-        }
-
-        inputs.forEach(input => {
-            const rowIndex = parseInt(input.dataset.row);
-            const colIndex = parseInt(input.dataset.col);
-            window.userSolution[rowIndex][colIndex] = parseInt(input.value);
-        });
-
-        highlightCells(currentPuzzle.answerGrid, window.userSolution);
-
-        if (checkAllCellsCorrect(window.userSolution, currentPuzzle.answerGrid)) {
-            updateResultMessage("Congratulations! You've solved the puzzle!");
-            showEndGameMessage("Congratulations! You've solved the puzzle!");
-        } else {
-            guessesLeft--;
-            updateErrorCount();
-            if (guessesLeft > 0) {
-                updateResultMessage(`Incorrect! You have ${guessesLeft} guesses left.`);
-                setTimeout(() => {
-                    checkButton.disabled = false;
-                }, 3000);
-            } else {
-                updateResultMessage("No more guesses left. Try again tomorrow!");
-                showEndGameMessage("No more guesses left. Try again tomorrow!");
-            }
-        }
-    };
-
-    fetch('grids.json')
-        .then(response => response.json())
-        .then(puzzles => {
-            currentPuzzle = puzzles.find(puzzle => puzzle.id === puzzleID);
-            startTime = new Date();
-            displayPuzzle(currentPuzzle.displayGrid);
-            displayClues(currentPuzzle);
-            startTimer();
-            console.log(currentPuzzle);
-        });
-
-    const displayClues = (puzzle) => {
-        const rowCluesContainer = document.getElementById("row-clues");
-        const colCluesContainer = document.getElementById("col-clues");
-        rowCluesContainer.innerHTML = '';
-        colCluesContainer.innerHTML = '';
-
-        puzzle.rowRules.forEach((rule, index) => {
-            rowCluesContainer.innerHTML += `<tr><td>Row ${index + 1}</td><td>${getReadableRule(rule)}</td></tr>`;
-        });
-        puzzle.colRules.forEach((rule, index) => {
-            colCluesContainer.innerHTML += `<tr><td>Column ${index + 1}</td><td>${getReadableRule(rule)}</td></tr>`;
-        });
-    };
-
     const getReadableRule = (rule) => {
         const rules = {
             palindromic: 'Numbers form a palindrome',
@@ -283,8 +298,118 @@ document.addEventListener("DOMContentLoaded", () => {
             odd: 'All numbers are odd',
             increasing: 'Numbers are in increasing order',
             decreasing: 'Numbers are in decreasing order',
-            sum: `Sum of numbers is ${rule.target}`
+            sum: `Sum of numbers is ${rule.target}`,
+            unique_digits: 'All numbers have unique digits',
+            alternating_parity: 'Numbers alternate between odd and even',
+            majority_even: `3 of the numbers are even numbers`,
+            majority_odd: `3 of the numbers are odd numbers`
         };
         return rules[rule.rule] || 'Unknown rule';
     };
+
+    const displayClues = (rowRules, colRules) => {
+        const rowCluesContainer = document.getElementById("row-clues");
+        const colCluesContainer = document.getElementById("col-clues");
+
+        rowCluesContainer.innerHTML = "";
+        colCluesContainer.innerHTML = "";
+
+        rowRules.forEach((rule, index) => {
+            const row = document.createElement("tr");
+            const rowLabel = document.createElement("td");
+            rowLabel.textContent = `Row ${index + 1}`;
+            const rowClue = document.createElement("td");
+            rowClue.textContent = getReadableRule(rule);
+            row.appendChild(rowLabel);
+            row.appendChild(rowClue);
+            rowCluesContainer.appendChild(row);
+        });
+
+        const columnLetters = ['A', 'B', 'C', 'D'];
+        colRules.forEach((rule, index) => {
+            const row = document.createElement("tr");
+            const colLabel = document.createElement("td");
+            colLabel.textContent = `Column ${columnLetters[index]}`;
+            const colClue = document.createElement("td");
+            colClue.textContent = getReadableRule(rule);
+            row.appendChild(colLabel);
+            row.appendChild(colClue);
+            colCluesContainer.appendChild(row);
+        });
+    };
+
+    const checkSolution = () => {
+        const submitButton = document.getElementById("check-button");
+
+        // Disable the submit button
+        submitButton.disabled = true;
+
+        const userSolution = currentPuzzle.displayGrid.map(row => row.slice());
+        highlightCells(currentPuzzle.answerGrid, userSolution);
+        const allCorrect = checkAllCellsCorrect(userSolution, currentPuzzle.answerGrid);
+
+        // Populate guess history
+        document.querySelectorAll("input").forEach(input => {
+            const rowIndex = input.dataset.row;
+            const colIndex = input.dataset.col;
+            const cellId = `${rowIndex}-${colIndex}`;
+            guessHistory[cellId].push(input.value);
+        });
+
+        if (allCorrect) {
+            showEndGameMessage("Congratulations! You've solved the puzzle!");
+        } else {
+            guessesLeft--;
+            updateErrorCount();
+            if (guessesLeft <= 0) {
+                revealCorrectAnswers();
+                showEndGameMessage("Game over! You've used all your guesses.");
+            } else {
+                updateResultMessage(`Incorrect! You have ${guessesLeft} guesses left.`);
+            }
+        }
+
+        // Re-enable the submit button after 3 seconds
+        setTimeout(() => {
+            submitButton.disabled = false;
+        }, 3000);
+    };
+
+    const revealCorrectAnswers = () => {
+        currentPuzzle.answerGrid.forEach((row, rowIndex) => {
+            row.forEach((cell, colIndex) => {
+                const cellDiv = document.querySelector(`.grid-cell[data-row="${rowIndex}"][data-col="${colIndex}"]`);
+                if (cellDiv) {
+                    const cellContent = cellDiv.querySelector(".grid-cell-content");
+                    const input = cellDiv.querySelector("input");
+                    if (input && parseInt(input.value) !== cell) {
+                        cellContent.textContent = cell;
+                        cellDiv.classList.add("revealed");
+                        input.remove();
+                    }
+                }
+            });
+        });
+    };
+
+    const loadPuzzle = async (puzzleID) => {
+        try {
+            const response = await fetch('grids.json');
+            const puzzles = await response.json();
+            currentPuzzle = puzzles.find(p => p.id === puzzleID);
+            if (!currentPuzzle) throw new Error(`Puzzle with ID ${puzzleID} not found`);
+
+            startTime = new Date();
+            startTimer();
+            displayPuzzle(currentPuzzle.displayGrid);
+            displayClues(currentPuzzle.rowRules, currentPuzzle.colRules);
+        } catch (error) {
+            console.error('Error loading puzzle:', error);
+        }
+    };
+
+    document.getElementById("check-button").addEventListener("click", checkSolution);
+
+    // Initialize the game with the current puzzle ID
+    loadPuzzle(puzzleID);
 });
