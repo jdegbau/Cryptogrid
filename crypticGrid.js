@@ -296,10 +296,10 @@ document.addEventListener("DOMContentLoaded", () => {
             below_threshold: `All numbers are less than ${rule.target}`,
             even: 'All numbers are even',
             odd: 'All numbers are odd',
-            increasing: 'Numbers are in increasing order',
-            decreasing: 'Numbers are in decreasing order',
+            increasing: 'Numbers are in ascending order',
+            decreasing: 'Numbers are in descending order',
             sum: `Sum of numbers is ${rule.target}`,
-            unique_digits: 'All numbers have unique digits',
+            unique_digits: 'All numbers are unique',
             alternating_parity: 'Numbers alternate between odd and even',
             majority_even: `3 of the numbers are even numbers`,
             majority_odd: `3 of the numbers are odd numbers`

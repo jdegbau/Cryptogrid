@@ -72,6 +72,10 @@ body {
     align-items: center;
 }
 
+.content {
+    width: 100%;
+}
+
 .tabs {
     display: flex;
     justify-content: space-between;
@@ -322,10 +326,6 @@ table#clues-table td, table#clues-table th {
     section#clues-container {
         order: 2;
         height: auto;
-    }
-
-    .content {
-        width: 100%;
     }
 
     .clues-section, .game-rules-section, .grid-section, .controls-section {

@@ -11,7 +11,7 @@ const weights = {
     odd: 0.05,
     increasing: 0.1,
     decreasing: 0.1,
-    unique_digits: 0.15,
+    unique_digits: 0.05,
     alternating_parity: 0.1,
     majority_even: 0.05,
     majority_odd: 0.05,
