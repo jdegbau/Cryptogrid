@@ -403,10 +403,12 @@ document.addEventListener("DOMContentLoaded", () => {
             currentPuzzle: currentPuzzle,
             userSolution: getUserSolution(), // Function to get the current user solution grid
             cellStates: getCellStates(), // Function to get the current state of each cell
-            gameOver: guessesLeft <= 0 || checkAllCellsCorrect(getUserSolution(), currentPuzzle.answerGrid)
+            gameOver: guessesLeft <= 0 || checkAllCellsCorrect(getUserSolution(), currentPuzzle.answerGrid),
+            puzzleID: getCurrentPuzzleID() // Save the current puzzle ID
         };
         localStorage.setItem('pseudokuGameState', JSON.stringify(gameState));
     };
+
 
     const getUserSolution = () => {
         const userSolution = [];
@@ -434,7 +436,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const loadGameState = () => {
         clearInterval(timerInterval); // Ensure any existing timer is cleared
         const gameState = JSON.parse(localStorage.getItem('pseudokuGameState'));
-        if (gameState) {
+        const currentPuzzleID = getCurrentPuzzleID(); // Function to get the current puzzle ID
+        if (gameState && gameState.puzzleID === currentPuzzleID) {
             guessesLeft = gameState.guessesLeft;
             timeSpent = gameState.timeSpent; // Restore elapsed time
             guessHistory = gameState.guessHistory;
@@ -464,9 +467,22 @@ document.addEventListener("DOMContentLoaded", () => {
                 showEndGameMessage(message);
             }
         } else {
-            // Load a new puzzle if no saved state is available
-            loadPuzzle(puzzleID);
+            // No valid saved game state, load the current puzzle
+            localStorage.removeItem('pseudokuGameState');
+            loadPuzzle(currentPuzzleID);
         }
+    };
+
+    const getCurrentPuzzleID = () => {
+        const startDate = new Date('Tues May 21 2024 00:00:00 GMT-0500 (Central Daylight Time)'); // Replace with your chosen start date
+        const today = new Date();
+        const cstOffset = -5 * 60; // CST is UTC-5
+        const todayCST = new Date(today.getTime() + (today.getTimezoneOffset() + cstOffset) * 60000);
+        todayCST.setHours(0, 0, 0, 0);
+        const timeDifference = todayCST.getTime() - startDate.getTime();
+        const daysSinceStart = Math.ceil(timeDifference / (1000 * 3600 * 24));
+        const totalPuzzleIds = 10;
+        return ((daysSinceStart) % totalPuzzleIds) + 1;
     };
 
     const restoreUserSolution = (userSolution) => {
