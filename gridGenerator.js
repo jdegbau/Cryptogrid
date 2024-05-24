@@ -1,5 +1,23 @@
 const startId = 0;
 
+// Weights for each rule, adding up to 1
+const weights = {
+    palindromic: 0.1,
+    sum_even: 0.05,
+    sum_odd: 0.05,
+    above_threshold: 0.1,
+    below_threshold: 0.1,
+    even: 0.05,
+    odd: 0.05,
+    increasing: 0.1,
+    decreasing: 0.1,
+    unique_digits: 0.15,
+    alternating_parity: 0.1,
+    majority_even: 0.05,
+    majority_odd: 0.05,
+    sum: 0.1 // Default weight for sum rule
+};
+
 const generateRandomGrid = (size) => {
     const grid = [];
     for (let i = 0; i < size; i++) {
@@ -52,33 +70,44 @@ const determineBestRule = (arr) => {
     const majorityOdd = oddCount > arr.length / 2;
 
     const rules = [
-        { rule: 'palindromic', check: () => isPalindrome(arr) },
-        { rule: 'sum_even', check: () => isSumEven(arr) },
-        { rule: 'sum_odd', check: () => isSumOdd(arr) },
-        { rule: 'above_threshold', check: () => isAboveThreshold(arr, 5), target: 5 },
-        { rule: 'below_threshold', check: () => isBelowThreshold(arr, 5), target: 5 },
-        { rule: 'even', check: () => isEven },
-        { rule: 'odd', check: () => isOdd },
-        { rule: 'increasing', check: () => isIncreasing },
-        { rule: 'decreasing', check: () => isDecreasing },
-        { rule: 'unique_digits', check: () => uniqueDigits },
-        { rule: 'alternating_parity', check: () => alternatingOddEven },
-        { rule: 'majority_even', check: () => majorityEven, target: evenCount },
-        { rule: 'majority_odd', check: () => majorityOdd, target: oddCount }
+        { rule: 'palindromic', check: () => isPalindrome(arr), weight: weights.palindromic },
+        { rule: 'sum_even', check: () => isSumEven(arr), weight: weights.sum_even },
+        { rule: 'sum_odd', check: () => isSumOdd(arr), weight: weights.sum_odd },
+        { rule: 'above_threshold', check: () => isAboveThreshold(arr, 5), target: 5, weight: weights.above_threshold },
+        { rule: 'below_threshold', check: () => isBelowThreshold(arr, 5), target: 5, weight: weights.below_threshold },
+        { rule: 'even', check: () => isEven, weight: weights.even },
+        { rule: 'odd', check: () => isOdd, weight: weights.odd },
+        { rule: 'increasing', check: () => isIncreasing, weight: weights.increasing },
+        { rule: 'decreasing', check: () => isDecreasing, weight: weights.decreasing },
+        { rule: 'unique_digits', check: () => uniqueDigits, weight: weights.unique_digits },
+        { rule: 'alternating_parity', check: () => alternatingOddEven, weight: weights.alternating_parity },
+        { rule: 'majority_even', check: () => majorityEven, target: evenCount, weight: weights.majority_even },
+        { rule: 'majority_odd', check: () => majorityOdd, target: oddCount, weight: weights.majority_odd },
+        { rule: 'sum', check: () => sum <= 30, target: sum, weight: weights.sum }
     ];
 
-    const sumRule = { rule: 'sum', check: () => sum <= 30, target: sum };
+    // Filter the rules based on their check function
+    const validRules = rules.filter(rule => rule.check());
 
-    // Shuffle the rules array to randomize the order of rule checking
-    for (let i = rules.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [rules[i], rules[j]] = [rules[j], rules[i]];
+    // If no rules are valid, use the sum rule
+    if (validRules.length === 0) {
+        return { rule: 'sum', target: sum };
     }
 
-    // Randomly select a rule with a weighted probability
-    const selectedRule = Math.random() < 0.1 ? sumRule : rules.find(rule => rule.check());
+    // Normalize the weights for valid rules
+    const totalWeight = validRules.reduce((acc, rule) => acc + rule.weight, 0);
+    const normalizedWeights = validRules.map(rule => rule.weight / totalWeight);
 
-    return selectedRule ? { rule: selectedRule.rule, target: selectedRule.target } : { rule: 'sum', target: sum };
+    // Select a rule based on normalized weights
+    let randomValue = Math.random();
+    for (let i = 0; i < validRules.length; i++) {
+        randomValue -= normalizedWeights[i];
+        if (randomValue <= 0) {
+            return { rule: validRules[i].rule, target: validRules[i].target };
+        }
+    }
+
+    return { rule: 'sum', target: sum }; // Fallback to sum rule if something goes wrong
 };
 
 const generatePuzzles = (numPuzzles, size) => {
