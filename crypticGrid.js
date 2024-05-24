@@ -25,8 +25,9 @@ const showRules = () => {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
-    let currentPuzzle, guessesLeft = 5, startTime, timerInterval;
+    let currentPuzzle, guessesLeft = 5, timerInterval;
     let guessHistory = {}; // Track guesses for each cell
+    let timeSpent = 0; // Track elapsed time
 
     // Set the arbitrary start date (e.g., today)
     const startDate = new Date('Tues May 21 2024 00:00:00 GMT-0500 (Central Daylight Time)'); // Replace with your chosen start date
@@ -42,14 +43,14 @@ document.addEventListener("DOMContentLoaded", () => {
     // Calculate the number of days since the start date
     const timeDifference = todayCST.getTime() - startDate.getTime();
     const daysSinceStart = Math.ceil(timeDifference / (1000 * 3600 * 24));
-    console.log(daysSinceStart)
+    console.log(daysSinceStart);
 
     // Total number of puzzle IDs available (assuming 10 in this example)
     const totalPuzzleIds = 10;
 
     // Set the puzzleID to the number of days since the start date, looping if necessary
     const puzzleID = ((daysSinceStart) % totalPuzzleIds) + 1;
-    console.log(puzzleID)
+    console.log(puzzleID);
 
     const updateResultMessage = (message) => {
         document.getElementById("result").textContent = message;
@@ -114,12 +115,11 @@ document.addEventListener("DOMContentLoaded", () => {
         document.querySelectorAll("input").forEach(input => input.disabled = true);
 
         const gridEmojis = generateGridEmojis();
-        const timeTaken = Math.floor((new Date() - startTime) / 1000);
         const totalGuesses = 5;
         const guessesUsed = totalGuesses - guessesLeft;
         const numberEmojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣'];
         const guessStatus = numberEmojis.map((emoji, index) => index < guessesUsed ? '❌' : emoji).join('');
-        const shareText = `Pseudoku — #${puzzleID}\n\n${gridEmojis}\nGuesses: ${guessStatus}\nTime: ${formatTime(timeTaken)}`;
+        const shareText = `Pseudoku — #${puzzleID}\n\n${gridEmojis}\nGuesses: ${guessStatus}\nTime: ${formatTime(timeSpent)}`;
 
         shareButton.onclick = () => {
             if (navigator.share) {
@@ -148,8 +148,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const startTimer = () => {
         const timerElement = document.getElementById("timer");
         timerInterval = setInterval(() => {
-            const timeTaken = Math.floor((new Date() - startTime) / 1000);
-            timerElement.textContent = `Time: ${formatTime(timeTaken)}`;
+            timeSpent++;
+            timerElement.textContent = `Time: ${formatTime(timeSpent)}`;
         }, 1000);
     };
 
@@ -223,7 +223,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 duplicateMessage.textContent = 'Already guessed!';
                                 cellDiv.appendChild(duplicateMessage);
                                 setTimeout(() => {
-                                    cellDiv.style.outline = '2px solid transparent';; // Clear feedback after a short delay
+                                    cellDiv.style.outline = '2px solid transparent'; // Clear feedback after a short delay
                                     cellDiv.removeChild(duplicateMessage);
                                 }, 2000);
                             }
@@ -344,7 +344,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Disable the submit button
         submitButton.disabled = true;
 
-        const userSolution = currentPuzzle.displayGrid.map(row => row.slice());
+        const userSolution = getUserSolution(); // Use getUserSolution to get the current state of the solution
         highlightCells(currentPuzzle.answerGrid, userSolution);
         const allCorrect = checkAllCellsCorrect(userSolution, currentPuzzle.answerGrid);
 
@@ -373,6 +373,9 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(() => {
             submitButton.disabled = false;
         }, 3000);
+
+        // Save game state after checking the solution
+        saveGameState();
     };
 
     const revealCorrectAnswers = () => {
@@ -392,6 +395,134 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     };
 
+    const saveGameState = () => {
+        const gameState = {
+            guessesLeft: guessesLeft,
+            timeSpent: timeSpent, // Save elapsed time in seconds
+            guessHistory: guessHistory,
+            currentPuzzle: currentPuzzle,
+            userSolution: getUserSolution(), // Function to get the current user solution grid
+            cellStates: getCellStates(), // Function to get the current state of each cell
+            gameOver: guessesLeft <= 0 || checkAllCellsCorrect(getUserSolution(), currentPuzzle.answerGrid)
+        };
+        localStorage.setItem('pseudokuGameState', JSON.stringify(gameState));
+    };
+
+    const getUserSolution = () => {
+        const userSolution = [];
+        document.querySelectorAll('.grid-cell').forEach(cell => {
+            const row = cell.dataset.row;
+            const col = cell.dataset.col;
+            if (!userSolution[row]) userSolution[row] = [];
+            const input = cell.querySelector('input');
+            userSolution[row][col] = input ? parseInt(input.value) : parseInt(cell.querySelector('.grid-cell-content').textContent);
+        });
+        return userSolution;
+    };
+
+    const getCellStates = () => {
+        const cellStates = [];
+        document.querySelectorAll('.grid-cell').forEach(cell => {
+            const row = cell.dataset.row;
+            const col = cell.dataset.col;
+            if (!cellStates[row]) cellStates[row] = [];
+            cellStates[row][col] = cell.className;
+        });
+        return cellStates;
+    };
+
+    const loadGameState = () => {
+        clearInterval(timerInterval); // Ensure any existing timer is cleared
+        const gameState = JSON.parse(localStorage.getItem('pseudokuGameState'));
+        if (gameState) {
+            guessesLeft = gameState.guessesLeft;
+            timeSpent = gameState.timeSpent; // Restore elapsed time
+            guessHistory = gameState.guessHistory;
+            currentPuzzle = gameState.currentPuzzle;
+
+            // Restore the user solution and cell states
+            displayPuzzle(currentPuzzle.displayGrid);
+            restoreUserSolution(gameState.userSolution);
+            restoreCellStates(gameState.cellStates);
+
+            // Update the UI elements
+            updateErrorCount();
+
+            if (!gameState.gameOver) {
+                startTimer();
+            } else {
+                // Clear the timer interval and update the timer element manually if the game was over
+                document.getElementById("timer").textContent = `Time: ${formatTime(timeSpent)}`;
+            }
+
+            // Display clues
+            displayClues(currentPuzzle.rowRules, currentPuzzle.colRules);
+
+            // If the game was over, show the end game message
+            if (gameState.gameOver) {
+                const message = guessesLeft <= 0 ? "Game over! You've used all your guesses." : "Congratulations! You've solved the puzzle!";
+                showEndGameMessage(message);
+            }
+        } else {
+            // Load a new puzzle if no saved state is available
+            loadPuzzle(puzzleID);
+        }
+    };
+
+    const restoreUserSolution = (userSolution) => {
+        userSolution.forEach((row, rowIndex) => {
+            row.forEach((value, colIndex) => {
+                const cell = document.querySelector(`.grid-cell[data-row="${rowIndex}"][data-col="${colIndex}"]`);
+                if (cell) {
+                    const cellContent = cell.querySelector('.grid-cell-content');
+                    if (value && (cell.classList.contains('correct') || cell.classList.contains('revealed'))) {
+                        cellContent.textContent = value;
+                        const input = cell.querySelector('input');
+                        if (input) {
+                            input.remove();
+                        }
+                    } else {
+                        const input = cell.querySelector('input');
+                        if (value && !cell.classList.contains('preset')) {
+                            if (input) {
+                                input.value = value;
+                            } else {
+                                const newInput = document.createElement('input');
+                                newInput.type = 'text';
+                                newInput.inputMode = 'numeric';
+                                newInput.maxLength = '1';
+                                newInput.pattern = '[1-9]';
+                                newInput.ariaLabel = 'Enter a number between 1 and 9';
+                                newInput.value = value;
+                                cellContent.appendChild(newInput);
+                                newInput.addEventListener('input', (e) => handleInput(e, rowIndex, colIndex));
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    };
+
+    const restoreCellStates = (cellStates) => {
+        cellStates.forEach((row, rowIndex) => {
+            row.forEach((state, colIndex) => {
+                const cell = document.querySelector(`.grid-cell[data-row="${rowIndex}"][data-col="${colIndex}"]`);
+                if (cell) {
+                    cell.className = state;
+                    if (cell.classList.contains('correct') || cell.classList.contains('revealed')) {
+                        const cellContent = cell.querySelector('.grid-cell-content');
+                        const input = cell.querySelector('input');
+                        if (input) {
+                            input.remove();
+                        }
+                        cellContent.textContent = currentPuzzle.answerGrid[rowIndex][colIndex];
+                    }
+                }
+            });
+        });
+    };
+
     const loadPuzzle = async (puzzleID) => {
         try {
             const response = await fetch('grids.json');
@@ -399,7 +530,7 @@ document.addEventListener("DOMContentLoaded", () => {
             currentPuzzle = puzzles.find(p => p.id === puzzleID);
             if (!currentPuzzle) throw new Error(`Puzzle with ID ${puzzleID} not found`);
 
-            startTime = new Date();
+            timeSpent = 0; // Reset elapsed time
             startTimer();
             displayPuzzle(currentPuzzle.displayGrid);
             displayClues(currentPuzzle.rowRules, currentPuzzle.colRules);
@@ -411,5 +542,11 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("check-button").addEventListener("click", checkSolution);
 
     // Initialize the game with the current puzzle ID
-    loadPuzzle(puzzleID);
+    loadGameState();
+
+    // Save game state at regular intervals (optional)
+    setInterval(saveGameState, 60000); // Save every minute
+
+    // Save game state before the user leaves the page
+    window.addEventListener("beforeunload", saveGameState);
 });
