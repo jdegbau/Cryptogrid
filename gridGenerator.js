@@ -18,12 +18,20 @@ const weights = {
     sum: 0.1 // Default weight for sum rule
 };
 
+
+// --- Configurable constants ---
+const MIN_CELL_VALUE = 1;
+const MAX_CELL_VALUE = 9;
+const MIN_DISPLAY_CELLS = 8;
+const MAX_DISPLAY_CELLS = 10;
+const MAX_ROW_COL_FILL = 3;
+
 const generateRandomGrid = (size) => {
     const grid = [];
     for (let i = 0; i < size; i++) {
         const row = [];
         for (let j = 0; j < size; j++) {
-            row.push(Math.floor(Math.random() * 9) + 1); // Random numbers between 1 and 9
+            row.push(Math.floor(Math.random() * (MAX_CELL_VALUE - MIN_CELL_VALUE + 1)) + MIN_CELL_VALUE);
         }
         grid.push(row);
     }
@@ -133,7 +141,7 @@ const generatePuzzles = (numPuzzles, size) => {
 const generateDisplayGrid = (answerGrid) => {
     const size = answerGrid.length;
     const displayGrid = JSON.parse(JSON.stringify(answerGrid)); // Deep copy
-    const numToFill = Math.floor(Math.random() * 3) + 8; // Populate 8-10 cells
+    const numToFill = Math.floor(Math.random() * (MAX_DISPLAY_CELLS - MIN_DISPLAY_CELLS + 1)) + MIN_DISPLAY_CELLS;
     const filledCells = generateFilledCells(size, numToFill);
 
     for (let rowIndex = 0; rowIndex < size; rowIndex++) {
@@ -166,7 +174,7 @@ const generateFilledCells = (size, numToFill) => {
     // Fill the cells while respecting the constraints
     for (const { row, col } of allCoords) {
         if (filledCells.size >= numToFill) break;
-        if (rowFillCount[row] < 3 && colFillCount[col] < 3) {
+        if (rowFillCount[row] < MAX_ROW_COL_FILL && colFillCount[col] < MAX_ROW_COL_FILL) {
             filledCells.add(`${row}-${col}`);
             rowFillCount[row]++;
             colFillCount[col]++;
