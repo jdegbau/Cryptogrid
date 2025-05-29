@@ -1,3 +1,82 @@
+/* Guess history popover styles */
+.guess-history-popover {
+    position: absolute;
+    bottom: 110%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fff;
+    border: 1px solid #bbb;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    padding: 6px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 10;
+    min-width: 60px;
+    max-width: 120px;
+    font-size: 1.1rem;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+}
+
+.chips-two-column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 8px;
+    width: 100%;
+    align-items: center;
+    justify-items: center;
+}
+.guess-chip {
+    background: #e8eaf6;
+    color: #6200ea;
+    border-radius: 50%;
+    width: 2em;
+    height: 2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.1em;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    border: 1px solid #bdbdbd;
+    transition: background 0.2s, color 0.2s;
+}
+.chip-correct {
+    background: #c8e6c9 !important;
+    color: #1b5e20 !important;
+    border-color: #388e3c !important;
+}
+.chip-hint {
+    background: #ffeb3b !important;
+    color: #f57f17 !important;
+    border-color: #fbc02d !important;
+}
+.chip-incorrect {
+    background: #ffcdd2 !important;
+    color: #b71c1c !important;
+    border-color: #b71c1c !important;
+}
+.guess-history-empty {
+    color: #aaa;
+    font-size: 0.95em;
+}
+
+@media (max-width: 768px) {
+    .guess-history-popover {
+        font-size: 1.2rem;
+        min-width: 40px;
+        max-width: 90px;
+        padding: 8px 6px;
+    }
+    .guess-chip {
+        width: 1.7em;
+        height: 1.7em;
+        font-size: 1em;
+    }
+}
 /* General Styles */
 body {
     font-family: 'Nunito', sans-serif;

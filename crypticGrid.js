@@ -25,6 +25,46 @@ const showRules = () => {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
+    // --- Admin override for resetting game and clearing all saved data ---
+    window.__PSEUDOKU_ADMIN_RESET = function () {
+        // Remove all localStorage for this domain
+        localStorage.clear();
+
+        // Reset all in-memory state variables
+        if (typeof timerInterval !== 'undefined') clearInterval(timerInterval);
+        guessesLeft = 5;
+        timeSpent = 0;
+        guessHistory = {};
+        currentPuzzle = undefined;
+
+        // Remove all grid and UI content
+        const gridContainer = document.getElementById("grid-cells");
+        if (gridContainer) gridContainer.innerHTML = '';
+        const result = document.getElementById("result");
+        if (result) result.textContent = '';
+        const errors = document.getElementById("errors");
+        if (errors) errors.textContent = '';
+        const timer = document.getElementById("timer");
+        if (timer) timer.textContent = 'Time: 0:00';
+        const shareButton = document.getElementById("share-button");
+        if (shareButton) {
+            shareButton.style.display = 'none';
+            shareButton.classList.remove('glow');
+        }
+        const checkButton = document.getElementById("check-button");
+        if (checkButton) checkButton.style.display = '';
+
+        // Remove all input disables
+        document.querySelectorAll("input").forEach(input => input.disabled = false);
+
+        // Reload the game state and puzzle
+        if (typeof loadGameState === 'function') {
+            loadGameState();
+        } else {
+            location.reload();
+        }
+        console.log('%cPseudoku: FULL game state and all saved data have been reset.', 'color: #6200ea; font-weight: bold;');
+    };
     let currentPuzzle, guessesLeft = 5, timerInterval;
     let guessHistory = {}; // Track guesses for each cell
     let timeSpent = 0; // Track elapsed time
@@ -163,8 +203,15 @@ document.addEventListener("DOMContentLoaded", () => {
         const columnLabels = ['A', 'B', 'C', 'D'];
         const rowLabels = ['1', '2', '3', '4'];
 
-        // Initialize guess history
-        guessHistory = {};
+        // Initialize guess history from localStorage if available
+        let loadedGuessHistory = {};
+        try {
+            const gameState = JSON.parse(localStorage.getItem('pseudokuGameState'));
+            if (gameState && gameState.guessHistory) {
+                loadedGuessHistory = gameState.guessHistory;
+            }
+        } catch (e) { }
+        guessHistory = loadedGuessHistory;
 
         // Create the labels in the first and last row and column
         gridContainer.appendChild(document.createElement('div')); // Empty top-left corner
@@ -190,13 +237,37 @@ document.addEventListener("DOMContentLoaded", () => {
                 cellDiv.dataset.row = rowIndex;
                 cellDiv.dataset.col = colIndex;
 
+                // Guess history popover
+                const cellId = `${rowIndex}-${colIndex}`;
+                guessHistory[cellId] = guessHistory[cellId] || [];
+                const guessPopover = document.createElement('div');
+                guessPopover.className = 'guess-history-popover';
+                guessPopover.style.display = 'none';
+                cellDiv.appendChild(guessPopover);
+
                 const cellContent = document.createElement("div");
                 cellContent.classList.add("grid-cell-content");
 
+                let isCompletedCorrect = false;
+                // Check if this cell is completed and correct (no input, matches answerGrid)
                 if (cell !== null) {
                     cellContent.textContent = cell;
                     cellDiv.classList.add("preset");
                 } else {
+                    // If the cell is correct (no input, correct value shown), mark as completed
+                    let completed = false;
+                    if (currentPuzzle && currentPuzzle.answerGrid) {
+                        const correctValue = currentPuzzle.answerGrid[rowIndex][colIndex];
+                        // If the cell is already filled and not an input, it's correct
+                        if (typeof correctValue !== 'undefined') {
+                            // Check if the cell will be rendered as correct (no input, value matches answer)
+                            // This logic matches the highlightCells logic
+                            // If the cellContent will be set to correctValue and no input, it's completed
+                            // We'll check after restoreUserSolution as well, but for now:
+                            // If the cell is not preset and not input, and content matches correctValue
+                            // We'll check after DOM is restored, but for now, we only show popover for editable cells
+                        }
+                    }
                     const input = document.createElement("input");
                     input.type = "text";
                     input.inputMode = "numeric"; // Hint that the input should be numeric
@@ -206,24 +277,20 @@ document.addEventListener("DOMContentLoaded", () => {
                     input.dataset.row = rowIndex;
                     input.dataset.col = colIndex;
 
-                    // Initialize guess history for this cell
-                    const cellId = `${rowIndex}-${colIndex}`;
-                    guessHistory[cellId] = [];
-
                     // Ensure the input is a valid digit between 1 and 9 and has not been guessed already
                     input.addEventListener('input', (e) => {
                         const value = e.target.value;
                         if (!/^[1-9]$/.test(value) || guessHistory[cellId].includes(value)) {
-                            e.target.value = ''; // Clear the input if it's not a valid digit or has been guessed already
+                            e.target.value = '';
                             if (guessHistory[cellId].includes(value)) {
                                 const cellDiv = e.target.closest(".grid-cell");
-                                cellDiv.style.outline = '2px solid red'; // Show feedback for duplicate guess
+                                cellDiv.style.outline = '2px solid red';
                                 const duplicateMessage = document.createElement('div');
                                 duplicateMessage.className = 'duplicate-message';
                                 duplicateMessage.textContent = 'Already guessed!';
                                 cellDiv.appendChild(duplicateMessage);
                                 setTimeout(() => {
-                                    cellDiv.style.outline = '2px solid transparent'; // Clear feedback after a short delay
+                                    cellDiv.style.outline = '2px solid transparent';
                                     cellDiv.removeChild(duplicateMessage);
                                 }, 2000);
                             }
@@ -231,9 +298,71 @@ document.addEventListener("DOMContentLoaded", () => {
                     });
 
                     input.addEventListener('input', (e) => handleInput(e, rowIndex, colIndex));
-
                     cellContent.appendChild(input);
                 }
+
+                // --- Guess history popover logic ---
+                let popoverTimeout;
+                const showPopover = () => {
+                    // Only show popover if cell is not completed and correct, and not a preset cell
+                    if (cellDiv.classList.contains('correct') || cellDiv.classList.contains('revealed') || cellDiv.classList.contains('preset')) return;
+                    guessPopover.innerHTML = '';
+                    const guesses = guessHistory[cellId] || [];
+                    if (guesses.length === 0) {
+                        guessPopover.innerHTML = '<span class="guess-history-empty">No guesses yet</span>';
+                    } else {
+                        // Get the correct value for this cell
+                        let correctValue = undefined;
+                        if (currentPuzzle && currentPuzzle.answerGrid) {
+                            correctValue = currentPuzzle.answerGrid[rowIndex][colIndex];
+                        }
+                        // Create a container for two-column layout
+                        const chipsContainer = document.createElement('div');
+                        chipsContainer.className = 'chips-two-column';
+                        guesses.forEach(num => {
+                            const chip = document.createElement('span');
+                            chip.className = 'guess-chip';
+                            chip.textContent = num;
+                            if (correctValue !== undefined) {
+                                const guessNum = parseInt(num);
+                                if (guessNum === correctValue) {
+                                    chip.classList.add('chip-correct');
+                                } else if (Math.abs(guessNum - correctValue) <= 2) {
+                                    chip.classList.add('chip-hint');
+                                } else {
+                                    chip.classList.add('chip-incorrect');
+                                }
+                            }
+                            chipsContainer.appendChild(chip);
+                        });
+                        guessPopover.appendChild(chipsContainer);
+                    }
+                    guessPopover.style.display = 'flex';
+                    // Auto-hide after 2.5s on mobile
+                    if ('ontouchstart' in window) {
+                        clearTimeout(popoverTimeout);
+                        popoverTimeout = setTimeout(() => { guessPopover.style.display = 'none'; }, 2500);
+                    }
+                };
+                const hidePopover = () => {
+                    guessPopover.style.display = 'none';
+                };
+
+                // Desktop: show on mouseenter/focus, hide on mouseleave/blur
+                cellDiv.addEventListener('mouseenter', showPopover);
+                cellDiv.addEventListener('mouseleave', hidePopover);
+                cellDiv.addEventListener('focusin', showPopover);
+                cellDiv.addEventListener('focusout', hidePopover);
+
+                // Mobile: show on tap
+                cellDiv.addEventListener('touchstart', (e) => {
+                    e.stopPropagation();
+                    showPopover();
+                });
+                // Hide all popovers on touch elsewhere
+                document.body.addEventListener('touchstart', (e) => {
+                    if (!cellDiv.contains(e.target)) hidePopover();
+                });
 
                 cellDiv.appendChild(cellContent);
                 gridContainer.appendChild(cellDiv);
@@ -348,12 +477,15 @@ document.addEventListener("DOMContentLoaded", () => {
         highlightCells(currentPuzzle.answerGrid, userSolution);
         const allCorrect = checkAllCellsCorrect(userSolution, currentPuzzle.answerGrid);
 
-        // Populate guess history
+        // Populate guess history (avoid duplicates, only add if not already present and not empty)
         document.querySelectorAll("input").forEach(input => {
             const rowIndex = input.dataset.row;
             const colIndex = input.dataset.col;
             const cellId = `${rowIndex}-${colIndex}`;
-            guessHistory[cellId].push(input.value);
+            const val = input.value;
+            if (val && !guessHistory[cellId].includes(val)) {
+                guessHistory[cellId].push(val);
+            }
         });
 
         if (allCorrect) {
