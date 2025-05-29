@@ -425,11 +425,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     input.dataset.col = colIndex;
 
                     // Ensure the input is a valid digit between 1 and 9 and has not been guessed already
-                    input.addEventListener('input', (e) => {
-                        const value = e.target.value;
-                        if (!/^[1-9]$/.test(value) || guessHistory[cellId].includes(value)) {
-                            e.target.value = '';
-                            if (guessHistory[cellId].includes(value)) {
+                    // Overwrite value on keydown for digits 1-9
+                    input.addEventListener('keydown', (e) => {
+                        // Only process single digit keys 1-9 (not numpad)
+                        if (/^[1-9]$/.test(e.key)) {
+                            // Prevent entering if already guessed
+                            if (guessHistory[cellId].includes(e.key)) {
+                                e.preventDefault();
                                 const cellDiv = e.target.closest(".grid-cell");
                                 cellDiv.style.outline = '2px solid red';
                                 const duplicateMessage = document.createElement('div');
@@ -440,8 +442,55 @@ document.addEventListener("DOMContentLoaded", () => {
                                     cellDiv.style.outline = '2px solid transparent';
                                     cellDiv.removeChild(duplicateMessage);
                                 }, 2000);
+                                return;
                             }
+                            // Overwrite the value with the new digit
+                            e.preventDefault();
+                            e.target.value = e.key;
+                            // Optionally, trigger input event for downstream logic
+                            input.dispatchEvent(new Event('input', { bubbles: true }));
+                        } else if (
+                            // Allow navigation, backspace, delete, tab, arrows, etc.
+                            ["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(e.key)
+                        ) {
+                            // Allow default
+                        } else if (e.ctrlKey || e.metaKey) {
+                            // Allow copy/paste/select all
+                        } else {
+                            // Block all other keys
+                            e.preventDefault();
                         }
+                    });
+
+                    // Keep input event for pasting and programmatic changes
+                    input.addEventListener('input', (e) => {
+                        let value = e.target.value;
+                        // Always keep only the last character typed
+                        if (value.length > 1) {
+                            value = value.slice(-1);
+                        }
+                        // If not a valid digit 1-9, clear
+                        if (!/^[1-9]$/.test(value)) {
+                            e.target.value = '';
+                            return;
+                        }
+                        // If already guessed, clear and show message
+                        if (guessHistory[cellId].includes(value)) {
+                            e.target.value = '';
+                            const cellDiv = e.target.closest(".grid-cell");
+                            cellDiv.style.outline = '2px solid red';
+                            const duplicateMessage = document.createElement('div');
+                            duplicateMessage.className = 'duplicate-message';
+                            duplicateMessage.textContent = 'Already guessed!';
+                            cellDiv.appendChild(duplicateMessage);
+                            setTimeout(() => {
+                                cellDiv.style.outline = '2px solid transparent';
+                                cellDiv.removeChild(duplicateMessage);
+                            }, 2000);
+                            return;
+                        }
+                        // Set the value to the last valid character
+                        e.target.value = value;
                     });
 
                     input.addEventListener('input', (e) => handleInput(e, rowIndex, colIndex));
