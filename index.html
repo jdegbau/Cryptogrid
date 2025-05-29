@@ -79,10 +79,30 @@
                 <section class="controls-section">
                     <button class="button check-btn" id="check-button">Submit Guess</button>
                     <button class="button share-btn" id="share-button" style="display: none;">Share Your Score</button>
+                    <button class="button stats-btn" id="stats-button" onclick="showStatsModal()">📊 Stats</button>
                     <p class="result" id="result"></p>
                 </section>
             </section>
         </main>
+    </div>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Stats Modal -->
+    <div id="stats-modal" style="display:none;position:fixed;z-index:1000;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.7);">
+      <div style="background:#fff;max-width:600px;margin:40px auto;padding:24px;border-radius:12px;position:relative;">
+        <button onclick="hideStatsModal()" style="position:absolute;top:8px;right:12px;font-size:1.5em;background:none;border:none;cursor:pointer;">&times;</button>
+        <h2 style="margin-top:0;">Your Pseudoku Stats</h2>
+        <div id="stats-summary" style="margin-bottom:16px;"></div>
+        <div style="margin-bottom:16px; display: flex; justify-content: center; align-items: center;">
+          <canvas id="stats-win-chart" width="120" height="120" style="max-width:140px;max-height:140px;"></canvas>
+        </div>
+        <div style="margin-bottom:16px;">
+          <canvas id="stats-guess-chart" height="80"></canvas>
+        </div>
+        <div style="margin-bottom:16px;">
+          <canvas id="stats-time-chart" height="80"></canvas>
+        </div>
+      </div>
     </div>
     <script src="crypticGrid.js"></script>
 </body>

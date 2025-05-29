@@ -161,6 +161,26 @@ document.addEventListener("DOMContentLoaded", () => {
         const guessStatus = numberEmojis.map((emoji, index) => index < guessesUsed ? '❌' : emoji).join('');
         const shareText = `Pseudoku — #${puzzleID}\n\n${gridEmojis}\nGuesses: ${guessStatus}\nTime: ${formatTime(timeSpent)}`;
 
+        // --- Save daily stats to localStorage ---
+        try {
+            const todayStr = (new Date()).toISOString().slice(0, 10); // YYYY-MM-DD
+            let statsHistory = [];
+            try {
+                statsHistory = JSON.parse(localStorage.getItem('pseudokuStatsHistory')) || [];
+            } catch (e) { }
+            // Remove any existing entry for today
+            statsHistory = statsHistory.filter(entry => entry.date !== todayStr);
+            statsHistory.push({
+                date: todayStr,
+                win: message.toLowerCase().includes('congrat'),
+                guessesUsed: guessesUsed,
+                timeSpent: timeSpent
+            });
+            localStorage.setItem('pseudokuStatsHistory', JSON.stringify(statsHistory));
+        } catch (e) {
+            // ignore
+        }
+
         shareButton.onclick = () => {
             if (navigator.share) {
                 navigator.share({
@@ -170,6 +190,135 @@ document.addEventListener("DOMContentLoaded", () => {
                 navigator.clipboard.writeText(shareText).then(() => alert("Score copied to clipboard!"));
             }
         };
+    };
+    // --- Stats Modal and Chart.js integration ---
+    // Show stats modal
+    window.showStatsModal = function () {
+        let modal = document.getElementById('stats-modal');
+        if (!modal) return;
+        modal.style.display = 'block';
+        renderStatsCharts();
+    };
+
+    // Hide stats modal
+    window.hideStatsModal = function () {
+        let modal = document.getElementById('stats-modal');
+        if (!modal) return;
+        modal.style.display = 'none';
+    };
+
+    // Render stats charts using Chart.js
+    window.renderStatsCharts = function () {
+        let statsHistory = [];
+        try {
+            statsHistory = JSON.parse(localStorage.getItem('pseudokuStatsHistory')) || [];
+        } catch (e) { }
+        // Sort by date ascending
+        statsHistory.sort((a, b) => a.date.localeCompare(b.date));
+
+        // Prepare data
+        const dates = statsHistory.map(e => e.date);
+        const wins = statsHistory.map(e => e.win ? 1 : 0);
+        const guesses = statsHistory.map(e => e.guessesUsed);
+        const times = statsHistory.map(e => e.timeSpent);
+
+        // Win rate
+        const winRate = statsHistory.length ? (wins.reduce((a, b) => a + b, 0) / statsHistory.length * 100).toFixed(1) : '0';
+        // Current streak
+        let streak = 0;
+        for (let i = statsHistory.length - 1; i >= 0; i--) {
+            if (statsHistory[i].win) streak++;
+            else break;
+        }
+        // Average guesses
+        const avgGuesses = guesses.length ? (guesses.reduce((a, b) => a + b, 0) / guesses.length).toFixed(2) : '0';
+        // Average time
+        const avgTime = times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : '0';
+
+        // Update stats summary
+        document.getElementById('stats-summary').innerHTML = `
+            <b>Games played:</b> ${statsHistory.length}<br>
+            <b>Win rate:</b> ${winRate}%<br>
+            <b>Current streak:</b> ${streak}<br>
+            <b>Avg. guesses used:</b> ${avgGuesses}<br>
+            <b>Avg. time (s):</b> ${avgTime}
+        `;
+
+        // Render charts
+        // Destroy previous charts if any
+        if (window.statsWinChart) window.statsWinChart.destroy();
+        if (window.statsGuessChart) window.statsGuessChart.destroy();
+        if (window.statsTimeChart) window.statsTimeChart.destroy();
+
+        // Win/loss pie chart using official color palette
+        // Official palette (from styles.css):
+        // --primary: #6200ea; --accent: #03dac6; --error: #b00020; --success: #00c853; --hint: #ffd600;
+        const winColor = '#00c853'; // success
+        const lossColor = '#b00020'; // error
+        const ctxWin = document.getElementById('stats-win-chart').getContext('2d');
+        const winCount = wins.reduce((a, b) => a + b, 0);
+        const lossCount = wins.length - winCount;
+        window.statsWinChart = new Chart(ctxWin, {
+            type: 'pie',
+            data: {
+                labels: ['Wins', 'Losses'],
+                datasets: [{
+                    data: [winCount, lossCount],
+                    backgroundColor: [winColor, lossColor],
+                    borderColor: ['#fff', '#fff'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { display: true, position: 'bottom' },
+                    tooltip: { enabled: true }
+                },
+                responsive: false,
+                maintainAspectRatio: false,
+                layout: { padding: 0 },
+            },
+        });
+
+        // Guesses used line chart
+        const ctxGuess = document.getElementById('stats-guess-chart').getContext('2d');
+        window.statsGuessChart = new Chart(ctxGuess, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: 'Guesses Used',
+                    data: guesses,
+                    borderColor: '#2196f3',
+                    backgroundColor: 'rgba(33,150,243,0.2)',
+                    fill: true
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: { y: { min: 0, max: 5, ticks: { stepSize: 1 } } }
+            }
+        });
+
+        // Time spent line chart
+        const ctxTime = document.getElementById('stats-time-chart').getContext('2d');
+        window.statsTimeChart = new Chart(ctxTime, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: 'Time Spent (s)',
+                    data: times,
+                    borderColor: '#ff9800',
+                    backgroundColor: 'rgba(255,152,0,0.2)',
+                    fill: true
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: { y: { min: 0 } }
+            }
+        });
     };
 
     const generateGridEmojis = () => {
