@@ -469,9 +469,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const checkSolution = () => {
         const submitButton = document.getElementById("check-button");
-
         // Disable the submit button
         submitButton.disabled = true;
+
+        let hasDuplicate = false;
+        let firstDuplicateInput = null;
+        document.querySelectorAll("input").forEach(input => {
+            const rowIndex = input.dataset.row;
+            const colIndex = input.dataset.col;
+            const cellId = `${rowIndex}-${colIndex}`;
+            const val = input.value;
+            if (val && guessHistory[cellId] && guessHistory[cellId].includes(val)) {
+                hasDuplicate = true;
+                // Add shake class to the cell
+                const cellDiv = input.closest('.grid-cell');
+                cellDiv.classList.add('shake');
+                // Remove shake class after animation
+                setTimeout(() => {
+                    cellDiv.classList.remove('shake');
+                }, 500);
+                if (!firstDuplicateInput) firstDuplicateInput = input;
+            }
+        });
+
+        if (hasDuplicate) {
+            updateResultMessage('You cannot submit with a previously guessed value!');
+            // Focus the first duplicate input for user convenience
+            if (firstDuplicateInput) firstDuplicateInput.focus();
+            // Re-enable the submit button after a short delay
+            setTimeout(() => {
+                submitButton.disabled = false;
+            }, 1000);
+            return;
+        }
 
         const userSolution = getUserSolution(); // Use getUserSolution to get the current state of the solution
         highlightCells(currentPuzzle.answerGrid, userSolution);
