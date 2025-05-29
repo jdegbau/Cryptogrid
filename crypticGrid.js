@@ -160,7 +160,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const numberEmojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣'];
         const guessStatus = numberEmojis.map((emoji, index) => index < guessesUsed ? '❌' : emoji).join('');
         const shareText = `Pseudoku — #${puzzleID}\n\n${gridEmojis}\nGuesses: ${guessStatus}\nTime: ${formatTime(timeSpent)}`;
-
         // --- Save daily stats to localStorage ---
         try {
             const todayStr = (new Date()).toISOString().slice(0, 10); // YYYY-MM-DD
@@ -180,7 +179,6 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (e) {
             // ignore
         }
-
         shareButton.onclick = () => {
             if (navigator.share) {
                 navigator.share({

@@ -408,10 +408,15 @@ table#clues-table td, table#clues-table th {
 @media (max-width: 768px) {
     .container {
         width: 100%;
+        min-width: 0;
+        max-width: 100vw;
+        border-radius: 0;
+        box-shadow: none;
     }
 
     .main {
         flex-direction: column;
+        padding: 8px;
     }
 
     section#clues-container {
@@ -423,5 +428,31 @@ table#clues-table td, table#clues-table th {
         width: 100%;
         margin-right: 0;
         margin-bottom: 20px;
+    }
+
+    .grid-cells {
+        grid-template-columns: auto repeat(4, minmax(44px, 1fr)) auto;
+        grid-template-rows: auto repeat(4, minmax(44px, 1fr)) auto;
+        gap: 4px;
+    }
+
+    .grid-cell, .row-label, .column-label {
+        font-size: 1rem;
+        padding: 0;
+    }
+
+    .grid-cell-content, .grid-cell input {
+        font-size: 1.3rem;
+    }
+
+    .button {
+        font-size: 0.95rem;
+        padding: 8px 12px;
+        margin: 6px 0;
+    }
+
+    #share-options {
+        flex-direction: column;
+        gap: 6px;
     }
 }
