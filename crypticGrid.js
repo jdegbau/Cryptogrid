@@ -159,7 +159,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const guessesUsed = totalGuesses - guessesLeft;
         const numberEmojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣'];
         const guessStatus = numberEmojis.map((emoji, index) => index < guessesUsed ? '❌' : emoji).join('');
-        const shareText = `Pseudoku — #${puzzleID}\n\n${gridEmojis}\nGuesses: ${guessStatus}\nTime: ${formatTime(timeSpent)}`;
+        // Add UTM parameters for tracking
+        const websiteUrl = window.location.origin + window.location.pathname + '?utm_source=share&utm_medium=game&utm_campaign=pseudoku_share';
+        const shareText = `Pseudoku — #${puzzleID}\n\n${gridEmojis}\nGuesses: ${guessStatus}\nTime: ${formatTime(timeSpent)}\nPlay: ${websiteUrl}`;
         // --- Save daily stats to localStorage ---
         try {
             const todayStr = (new Date()).toISOString().slice(0, 10); // YYYY-MM-DD
