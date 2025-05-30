@@ -26,6 +26,15 @@ const showRules = () => {
 
 document.addEventListener("DOMContentLoaded", () => {
     // --- Admin override for resetting game and clearing all saved data ---
+    // --- Utility: Debounce function for performance (used for saveGameState) ---
+    function debounce(func, wait) {
+        let timeout;
+        return function (...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
+
     window.__PSEUDOKU_ADMIN_RESET = function () {
         // Remove all localStorage for this domain
         localStorage.clear();
@@ -66,8 +75,8 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log('%cPseudoku: FULL game state and all saved data have been reset.', 'color: #6200ea; font-weight: bold;');
     };
     let currentPuzzle, guessesLeft = 5, timerInterval;
-    let guessHistory = {}; // Track guesses for each cell
-    let timeSpent = 0; // Track elapsed time
+    let guessHistory = {};
+    let timeSpent = 0;
 
     // Set the arbitrary start date (e.g., today)
     const startDate = new Date('Tues May 21 2024 00:00:00 GMT-0500 (Central Daylight Time)'); // Replace with your chosen start date
@@ -93,25 +102,25 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log(puzzleID);
 
     const updateResultMessage = (message) => {
-        document.getElementById("result").textContent = message;
+        const result = document.getElementById("result");
+        if (result.textContent !== message) result.textContent = message;
     };
 
     const updateErrorCount = () => {
         const totalGuesses = 5;
         const guessesUsed = totalGuesses - guessesLeft;
         const numberEmojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣'];
-        const errorIcons = numberEmojis.map((emoji, index) => {
-            return `<span class="guess-icon">${index < guessesUsed ? '❌' : emoji}</span>`;
-        }).join('');
+        let errorIcons = '';
+        for (let i = 0; i < numberEmojis.length; i++) {
+            errorIcons += `<span class="guess-icon">${i < guessesUsed ? '❌' : numberEmojis[i]}</span>`;
+        }
         document.getElementById("errors").innerHTML = `Guesses: ${errorIcons}`;
     };
 
     const checkAllCellsCorrect = (userSolution, correctGrid) => {
         for (let rowIndex = 0; rowIndex < correctGrid.length; rowIndex++) {
             for (let colIndex = 0; colIndex < correctGrid[rowIndex].length; colIndex++) {
-                if (correctGrid[rowIndex][colIndex] !== userSolution[rowIndex][colIndex]) {
-                    return false;
-                }
+                if (correctGrid[rowIndex][colIndex] !== userSolution[rowIndex][colIndex]) return false;
             }
         }
         return true;
@@ -150,10 +159,144 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("check-button").style.display = "none";
         const shareButton = document.getElementById("share-button");
         shareButton.style.display = "block";
-        shareButton.classList.add("glow"); // Add the glow effect
-        document.getElementById("result").textContent = message;
+        shareButton.classList.add("glow");
+        const resultDiv = document.getElementById("result");
+        let signifier = '';
+        let animClass = '';
+        const isWin = message.toLowerCase().includes('congrat');
+        const isLose = message.toLowerCase().includes('game over');
+        if (isWin) {
+            signifier = '🎉';
+            animClass = 'result-animate-win';
+        } else if (isLose) {
+            signifier = '❌';
+            animClass = 'result-animate-lose';
+        }
+        // Default result message
+        resultDiv.innerHTML = `<span class="result-signifier ${animClass}" style="font-size:2em;vertical-align:middle;display:inline-block;">${signifier}</span><span>${message}</span>`;
+
+        // Inject animation CSS for result signifier and overlays (only once)
+        if (!document.getElementById('pseudoku-result-animations')) {
+            const style = document.createElement('style');
+            style.id = 'pseudoku-result-animations';
+            style.textContent = `
+      .result-animate-win {
+        animation: pop-bounce 0.7s cubic-bezier(.23,1.32,.59,.99);
+      }
+      .result-animate-lose {
+        animation: shake-lose 0.6s cubic-bezier(.36,.07,.19,.97);
+      }
+      @keyframes pop-bounce {
+        0% { transform: scale(0.2); opacity: 0; }
+        60% { transform: scale(1.3); opacity: 1; }
+        80% { transform: scale(0.95); }
+        100% { transform: scale(1); }
+      }
+      @keyframes shake-lose {
+        0% { transform: translateX(0); }
+        20% { transform: translateX(-10px); }
+        40% { transform: translateX(10px); }
+        60% { transform: translateX(-8px); }
+        80% { transform: translateX(8px); }
+        100% { transform: translateX(0); }
+      }
+      /* Emoji rain for win */
+      .emoji-rain {
+        pointer-events: none;
+        position: fixed;
+        left: 0; top: 0; width: 100vw; height: 100vh;
+        z-index: 9999;
+        overflow: visible;
+      }
+      .emoji-raindrop {
+        position: absolute;
+        font-size: 2.2em;
+        will-change: transform, opacity;
+        user-select: none;
+        pointer-events: none;
+        animation: emoji-fall 1.5s linear forwards;
+      }
+      @keyframes emoji-fall {
+        0% { transform: translateY(-10vh) scale(0.7) rotate(-10deg); opacity: 0.7; }
+        10% { opacity: 1; }
+        90% { opacity: 1; }
+        100% { transform: translateY(100vh) scale(1.1) rotate(10deg); opacity: 0; }
+      }
+      /* Large emoji overlay for loss */
+      .emoji-overlay {
+        position: fixed;
+        left: 0; top: 0; width: 100vw; height: 100vh;
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        background: none;
+        animation: overlay-fade 2.2s cubic-bezier(.23,1.32,.59,.99);
+      }
+      .emoji-overlay-inner {
+        font-size: 8em;
+        filter: drop-shadow(0 0 16px #b00020cc);
+        animation: pop-bounce 0.7s cubic-bezier(.23,1.32,.59,.99);
+      }
+      @keyframes overlay-fade {
+        0% { opacity: 0; }
+        10% { opacity: 1; }
+        90% { opacity: 1; }
+        100% { opacity: 0; }
+      }
+    `;
+            document.head.appendChild(style);
+        }
+
         document.querySelectorAll("input").forEach(input => input.disabled = true);
 
+        // --- WIN: Emoji rain effect ---
+        if (isWin) {
+            // Remove any previous rain
+            const prevRain = document.querySelector('.emoji-rain');
+            if (prevRain) prevRain.remove();
+            const rainContainer = document.createElement('div');
+            rainContainer.className = 'emoji-rain';
+            document.body.appendChild(rainContainer);
+            // Rain 24-32 emojis, randomize X position, delay, and speed
+            const rainCount = 28;
+            for (let i = 0; i < rainCount; i++) {
+                const drop = document.createElement('span');
+                drop.className = 'emoji-raindrop';
+                drop.textContent = '🎉';
+                // Randomize horizontal position (5% to 95%)
+                drop.style.left = `${Math.random() * 90 + 5}%`;
+                // Randomize animation duration (1.2s to 2.1s)
+                const duration = 1.2 + Math.random() * 0.9;
+                drop.style.animationDuration = `${duration}s`;
+                // Randomize animation delay (0 to 0.7s)
+                drop.style.animationDelay = `${Math.random() * 0.7}s`;
+                // Randomize size (1.5em to 2.7em)
+                drop.style.fontSize = `${1.5 + Math.random() * 1.2}em`;
+                rainContainer.appendChild(drop);
+            }
+            // Remove rain after 2.2s
+            setTimeout(() => {
+                rainContainer.remove();
+            }, 2200);
+        }
+
+        // --- LOSE: Large emoji overlay ---
+        if (isLose) {
+            // Remove any previous overlay
+            const prevOverlay = document.querySelector('.emoji-overlay');
+            if (prevOverlay) prevOverlay.remove();
+            const overlay = document.createElement('div');
+            overlay.className = 'emoji-overlay';
+            overlay.innerHTML = `<span class="emoji-overlay-inner">❌</span>`;
+            document.body.appendChild(overlay);
+            setTimeout(() => {
+                overlay.remove();
+            }, 2200);
+        }
+
+        // --- Share logic and stats ---
         const gridEmojis = generateGridEmojis();
         const totalGuesses = 5;
         const guessesUsed = totalGuesses - guessesLeft;
@@ -172,7 +315,7 @@ document.addEventListener("DOMContentLoaded", () => {
             statsHistory = statsHistory.filter(entry => entry.date !== todayStr);
             statsHistory.push({
                 date: todayStr,
-                win: message.toLowerCase().includes('congrat'),
+                win: isWin,
                 guessesUsed: guessesUsed,
                 timeSpent: timeSpent
             });
@@ -341,7 +484,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 1000);
     };
 
-    const formatTime = (seconds) => `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`;
+    const formatTime = (seconds) => {
+        const min = Math.floor(seconds / 60);
+        const sec = seconds % 60;
+        return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+    };
 
     const displayPuzzle = (grid) => {
         const gridContainer = document.getElementById("grid-cells");
@@ -754,19 +901,20 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     };
 
-    const saveGameState = () => {
+    // Debounced save for performance
+    const saveGameState = debounce(() => {
         const gameState = {
-            guessesLeft: guessesLeft,
-            timeSpent: timeSpent, // Save elapsed time in seconds
-            guessHistory: guessHistory,
-            currentPuzzle: currentPuzzle,
-            userSolution: getUserSolution(), // Function to get the current user solution grid
-            cellStates: getCellStates(), // Function to get the current state of each cell
+            guessesLeft,
+            timeSpent,
+            guessHistory,
+            currentPuzzle,
+            userSolution: getUserSolution(),
+            cellStates: getCellStates(),
             gameOver: guessesLeft <= 0 || checkAllCellsCorrect(getUserSolution(), currentPuzzle.answerGrid),
-            puzzleID: getCurrentPuzzleID() // Save the current puzzle ID
+            puzzleID: getCurrentPuzzleID()
         };
         localStorage.setItem('pseudokuGameState', JSON.stringify(gameState));
-    };
+    }, 300);
 
 
     const getUserSolution = () => {
@@ -920,8 +1068,21 @@ document.addEventListener("DOMContentLoaded", () => {
     loadGameState();
 
     // Save game state at regular intervals (optional)
-    setInterval(saveGameState, 60000); // Save every minute
+    // Remove periodic save, rely on debounced saveGameState
 
     // Save game state before the user leaves the page
-    window.addEventListener("beforeunload", saveGameState);
+    window.addEventListener("beforeunload", () => {
+        // Save immediately on unload
+        const gameState = {
+            guessesLeft,
+            timeSpent,
+            guessHistory,
+            currentPuzzle,
+            userSolution: getUserSolution(),
+            cellStates: getCellStates(),
+            gameOver: guessesLeft <= 0 || checkAllCellsCorrect(getUserSolution(), currentPuzzle.answerGrid),
+            puzzleID: getCurrentPuzzleID()
+        };
+        localStorage.setItem('pseudokuGameState', JSON.stringify(gameState));
+    });
 });
