@@ -1,25 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="robots" content="noindex" />
-    <title>Pseudoku</title>
-    <link rel="preload" href="styles.css" as="style">
-    <link rel="preload" href="crypticGrid.js" as="script">
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Pseudoku</title>
+  <!-- Open Graph Meta Tags -->
+  <meta property="og:title" content="Pseudoku — Daily Logic Puzzle">
+  <meta property="og:description" content="Fill the grid using logic and clues. Can you solve today's Pseudoku?">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://jdegbau.com/Cryptogrid/">
+  <meta property="og:image" content="https://jdegbau.com/Cryptogrid/og-image.jpeg">
+  <meta property="og:site_name" content="Pseudoku">
+  <!-- Twitter Card Meta Tags -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Pseudoku — Daily Logic Puzzle">
+  <meta name="twitter:description" content="Fill the grid using logic and clues. Can you solve today's Pseudoku?">
+  <meta name="twitter:image" content="https://jdegbau.com/Cryptogrid/og-image.jpeg">
+  <meta name="twitter:site" content="@pseudoku">
+  <link rel="preload" href="styles.css" as="style">
+  <link rel="preload" href="crypticGrid.js" as="script">
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <h1 class="title">Pseudoku</h1>
-            <div class="status">
-                <div class="timer" id="timer">Time: 0:00</div>
-                <div class="errors" id="errors">Guesses Remaining: </div>
-            </div>
-        </header>
-        <main class="main">
+  <div class="container">
+    <header class="header">
+      <h1 class="title">Pseudoku</h1>
+      <div class="status">
+        <div class="timer" id="timer">Time: 0:00</div>
+        <div class="errors" id="errors">Guesses Remaining: </div>
+      </div>
+    </header>
+    <main class="main">
             <section class="clues-section" id="clues-container">
                 <div class="tabs">
                     <button class="tab-button active" id="clues-tab" onclick="showClues()">Clues</button>
@@ -85,8 +98,8 @@
             </section>
         </main>
     </div>
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js CDN (defer for speed) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     <!-- Stats Modal -->
     <div id="stats-modal" style="display:none;position:fixed;z-index:1000;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.7);">
       <div style="background:#fff;max-width:600px;margin:40px auto;padding:24px;border-radius:12px;position:relative;">
@@ -104,6 +117,6 @@
         </div>
       </div>
     </div>
-    <script src="crypticGrid.js"></script>
+    <script src="crypticGrid.js" defer></script>
 </body>
 </html>
