@@ -77,29 +77,36 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentPuzzle, guessesLeft = 5, timerInterval;
     let guessHistory = {};
     let timeSpent = 0;
+    let allPuzzles = [];
+    let puzzleID, puzzleDate;
 
-    // Set the arbitrary start date (e.g., today)
-    const startDate = new Date('Tues May 21 2024 00:00:00 GMT-0500 (Central Daylight Time)'); // Replace with your chosen start date
+    // --- Puzzle day ---
+    // Everyone gets the same puzzle on the same calendar day in Chicago,
+    // wherever they are and whatever the daylight-saving state.
+    const PUZZLE_TIME_ZONE = 'America/Chicago';
+    const PUZZLE_EPOCH_UTC = Date.UTC(2024, 4, 21); // 21 May 2024 is puzzle day 0
+    const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-    // Get the current date and convert it to CST
-    const today = new Date();
-    const cstOffset = -5 * 60; // CST is UTC-5
-    const todayCST = new Date(today.getTime() + (today.getTimezoneOffset() + cstOffset) * 60000);
+    // Today's date in Chicago as "YYYY-MM-DD".
+    const getPuzzleDate = () => {
+        const parts = new Intl.DateTimeFormat('en-US', {
+            timeZone: PUZZLE_TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit'
+        }).formatToParts(new Date());
+        const get = (type) => parts.find(p => p.type === type).value;
+        return `${get('year')}-${get('month')}-${get('day')}`;
+    };
 
-    // Set the time to the most recent midnight
-    todayCST.setHours(0, 0, 0, 0);
+    // Whole days between the epoch and today's Chicago date. Both are taken
+    // as UTC midnights, so time zones and DST can't shift the count.
+    const getPuzzleDayIndex = () => {
+        const [y, m, d] = getPuzzleDate().split('-').map(Number);
+        return Math.round((Date.UTC(y, m - 1, d) - PUZZLE_EPOCH_UTC) / MS_PER_DAY);
+    };
 
-    // Calculate the number of days since the start date
-    const timeDifference = todayCST.getTime() - startDate.getTime();
-    const daysSinceStart = Math.ceil(timeDifference / (1000 * 3600 * 24));
-    console.log(daysSinceStart);
-
-    // Total number of puzzle IDs available (assuming 10 in this example)
-    const totalPuzzleIds = 10;
-
-    // Set the puzzleID to the number of days since the start date, looping if necessary
-    const puzzleID = ((daysSinceStart) % totalPuzzleIds) + 1;
-    console.log(puzzleID);
+    const getCurrentPuzzleID = () => {
+        const total = allPuzzles.length;
+        return (((getPuzzleDayIndex() % total) + total) % total) + 1;
+    };
 
     const updateResultMessage = (message) => {
         const result = document.getElementById("result");
@@ -154,12 +161,14 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     };
 
-    const showEndGameMessage = (message) => {
+    // `restoring` is true when reloading a game that already ended: show the
+    // final state, but don't replay the animations or record stats again.
+    const showEndGameMessage = (message, { restoring = false } = {}) => {
         clearInterval(timerInterval);
         document.getElementById("check-button").style.display = "none";
         const shareButton = document.getElementById("share-button");
         shareButton.style.display = "block";
-        shareButton.classList.add("glow");
+        if (!restoring) shareButton.classList.add("glow");
         const resultDiv = document.getElementById("result");
         let signifier = '';
         let animClass = '';
@@ -167,10 +176,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const isLose = message.toLowerCase().includes('game over');
         if (isWin) {
             signifier = '🎉';
-            animClass = 'result-animate-win';
+            animClass = restoring ? '' : 'result-animate-win';
         } else if (isLose) {
             signifier = '❌';
-            animClass = 'result-animate-lose';
+            animClass = restoring ? '' : 'result-animate-lose';
         }
         // Default result message
         resultDiv.innerHTML = `<span class="result-signifier ${animClass}" style="font-size:2em;vertical-align:middle;display:inline-block;">${signifier}</span><span>${message}</span>`;
@@ -252,7 +261,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.querySelectorAll("input").forEach(input => input.disabled = true);
 
         // --- WIN: Emoji rain effect ---
-        if (isWin) {
+        if (isWin && !restoring) {
             // Remove any previous rain
             const prevRain = document.querySelector('.emoji-rain');
             if (prevRain) prevRain.remove();
@@ -283,7 +292,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         // --- LOSE: Large emoji overlay ---
-        if (isLose) {
+        if (isLose && !restoring) {
             // Remove any previous overlay
             const prevOverlay = document.querySelector('.emoji-overlay');
             if (prevOverlay) prevOverlay.remove();
@@ -304,9 +313,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const guessStatus = numberEmojis.map((emoji, index) => index < guessesUsed ? '❌' : emoji).join('');
         const websiteUrl = window.location.origin + window.location.pathname;
         const shareText = `Pseudoku — #${puzzleID}\n\n${gridEmojis}\nGuesses: ${guessStatus}\nTime: ${formatTime(timeSpent)}\nPlay: ${websiteUrl}`;
-        // --- Save daily stats to localStorage ---
-        try {
-            const todayStr = (new Date()).toISOString().slice(0, 10); // YYYY-MM-DD
+        // --- Save daily stats to localStorage (once, when the game ends) ---
+        if (!restoring) try {
+            const todayStr = puzzleDate; // the day of the puzzle being played (Chicago), YYYY-MM-DD
             let statsHistory = [];
             try {
                 statsHistory = JSON.parse(localStorage.getItem('pseudokuStatsHistory')) || [];
@@ -543,106 +552,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 const cellContent = document.createElement("div");
                 cellContent.classList.add("grid-cell-content");
 
-                let isCompletedCorrect = false;
-                // Check if this cell is completed and correct (no input, matches answerGrid)
                 if (cell !== null) {
                     cellContent.textContent = cell;
                     cellDiv.classList.add("preset");
                 } else {
-                    // If the cell is correct (no input, correct value shown), mark as completed
-                    let completed = false;
-                    if (currentPuzzle && currentPuzzle.answerGrid) {
-                        const correctValue = currentPuzzle.answerGrid[rowIndex][colIndex];
-                        // If the cell is already filled and not an input, it's correct
-                        if (typeof correctValue !== 'undefined') {
-                            // Check if the cell will be rendered as correct (no input, value matches answer)
-                            // This logic matches the highlightCells logic
-                            // If the cellContent will be set to correctValue and no input, it's completed
-                            // We'll check after restoreUserSolution as well, but for now:
-                            // If the cell is not preset and not input, and content matches correctValue
-                            // We'll check after DOM is restored, but for now, we only show popover for editable cells
-                        }
-                    }
-                    const input = document.createElement("input");
-                    input.type = "text";
-                    input.inputMode = "numeric"; // Hint that the input should be numeric
-                    input.maxLength = "1";
-                    input.pattern = "[1-9]"; // Allow only digits 1-9
-                    input.ariaLabel = "Enter a number between 1 and 9"; // ARIA label for accessibility
-                    input.dataset.row = rowIndex;
-                    input.dataset.col = colIndex;
-
-                    // Ensure the input is a valid digit between 1 and 9 and has not been guessed already
-                    // Overwrite value on keydown for digits 1-9
-                    input.addEventListener('keydown', (e) => {
-                        // Only process single digit keys 1-9 (not numpad)
-                        if (/^[1-9]$/.test(e.key)) {
-                            // Prevent entering if already guessed
-                            if (guessHistory[cellId].includes(e.key)) {
-                                e.preventDefault();
-                                const cellDiv = e.target.closest(".grid-cell");
-                                cellDiv.style.outline = '2px solid red';
-                                const duplicateMessage = document.createElement('div');
-                                duplicateMessage.className = 'duplicate-message';
-                                duplicateMessage.textContent = 'Already guessed!';
-                                cellDiv.appendChild(duplicateMessage);
-                                setTimeout(() => {
-                                    cellDiv.style.outline = '2px solid transparent';
-                                    cellDiv.removeChild(duplicateMessage);
-                                }, 2000);
-                                return;
-                            }
-                            // Overwrite the value with the new digit
-                            e.preventDefault();
-                            e.target.value = e.key;
-                            // Optionally, trigger input event for downstream logic
-                            input.dispatchEvent(new Event('input', { bubbles: true }));
-                        } else if (
-                            // Allow navigation, backspace, delete, tab, arrows, etc.
-                            ["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(e.key)
-                        ) {
-                            // Allow default
-                        } else if (e.ctrlKey || e.metaKey) {
-                            // Allow copy/paste/select all
-                        } else {
-                            // Block all other keys
-                            e.preventDefault();
-                        }
-                    });
-
-                    // Keep input event for pasting and programmatic changes
-                    input.addEventListener('input', (e) => {
-                        let value = e.target.value;
-                        // Always keep only the last character typed
-                        if (value.length > 1) {
-                            value = value.slice(-1);
-                        }
-                        // If not a valid digit 1-9, clear
-                        if (!/^[1-9]$/.test(value)) {
-                            e.target.value = '';
-                            return;
-                        }
-                        // If already guessed, clear and show message
-                        if (guessHistory[cellId].includes(value)) {
-                            e.target.value = '';
-                            const cellDiv = e.target.closest(".grid-cell");
-                            cellDiv.style.outline = '2px solid red';
-                            const duplicateMessage = document.createElement('div');
-                            duplicateMessage.className = 'duplicate-message';
-                            duplicateMessage.textContent = 'Already guessed!';
-                            cellDiv.appendChild(duplicateMessage);
-                            setTimeout(() => {
-                                cellDiv.style.outline = '2px solid transparent';
-                                cellDiv.removeChild(duplicateMessage);
-                            }, 2000);
-                            return;
-                        }
-                        // Set the value to the last valid character
-                        e.target.value = value;
-                    });
-
-                    input.addEventListener('input', (e) => handleInput(e, rowIndex, colIndex));
-                    cellContent.appendChild(input);
+                    cellContent.appendChild(createCellInput(rowIndex, colIndex));
                 }
 
                 // --- Guess history popover logic ---
@@ -698,15 +612,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 cellDiv.addEventListener('focusin', showPopover);
                 cellDiv.addEventListener('focusout', hidePopover);
 
-                // Mobile: show on tap
-                cellDiv.addEventListener('touchstart', (e) => {
-                    e.stopPropagation();
-                    showPopover();
-                });
-                // Hide all popovers on touch elsewhere
-                document.body.addEventListener('touchstart', (e) => {
-                    if (!cellDiv.contains(e.target)) hidePopover();
-                });
+                // Mobile: show on tap. Taps elsewhere are handled by the single
+                // document-level listener (hideOtherPopovers), added once.
+                cellDiv.addEventListener('touchstart', showPopover);
 
                 cellDiv.appendChild(cellContent);
                 gridContainer.appendChild(cellDiv);
@@ -730,6 +638,81 @@ document.addEventListener("DOMContentLoaded", () => {
 
         updateResultMessage(`You have ${guessesLeft} guesses left.`);
         updateErrorCount();
+    };
+
+    // Hide every guess popover whose cell wasn't the one tapped.
+    const hideOtherPopovers = (e) => {
+        document.querySelectorAll('.guess-history-popover').forEach(popover => {
+            if (!popover.parentElement.contains(e.target)) popover.style.display = 'none';
+        });
+    };
+    document.addEventListener('touchstart', hideOtherPopovers);
+
+    // Flash a cell and show "Already guessed!" for a repeated value.
+    const showDuplicateWarning = (cellDiv) => {
+        cellDiv.style.outline = '2px solid red';
+        const duplicateMessage = document.createElement('div');
+        duplicateMessage.className = 'duplicate-message';
+        duplicateMessage.textContent = 'Already guessed!';
+        cellDiv.appendChild(duplicateMessage);
+        setTimeout(() => {
+            cellDiv.style.outline = '2px solid transparent';
+            duplicateMessage.remove();
+        }, 2000);
+    };
+
+    // Build an editable cell input with all of its handlers. Used both when
+    // the grid is first drawn and when a saved game is restored.
+    const createCellInput = (rowIndex, colIndex) => {
+        const cellId = `${rowIndex}-${colIndex}`;
+        guessHistory[cellId] = guessHistory[cellId] || [];
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.inputMode = "numeric"; // Hint that the input should be numeric
+        input.maxLength = "1";
+        input.pattern = "[1-9]"; // Allow only digits 1-9
+        input.ariaLabel = "Enter a number between 1 and 9";
+        input.dataset.row = rowIndex;
+        input.dataset.col = colIndex;
+
+        // Digits 1-9 overwrite the current value unless already guessed.
+        input.addEventListener('keydown', (e) => {
+            if (/^[1-9]$/.test(e.key)) {
+                e.preventDefault();
+                if (guessHistory[cellId].includes(e.key)) {
+                    showDuplicateWarning(e.target.closest(".grid-cell"));
+                    return;
+                }
+                e.target.value = e.key;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            } else if (
+                ["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(e.key) ||
+                e.ctrlKey || e.metaKey
+            ) {
+                // Allow navigation, editing and copy/paste
+            } else {
+                e.preventDefault();
+            }
+        });
+
+        // Handles paste, mobile keyboards and programmatic changes.
+        input.addEventListener('input', (e) => {
+            const value = e.target.value.slice(-1);
+            if (!/^[1-9]$/.test(value)) {
+                e.target.value = '';
+                return;
+            }
+            if (guessHistory[cellId].includes(value)) {
+                e.target.value = '';
+                showDuplicateWarning(e.target.closest(".grid-cell"));
+                return;
+            }
+            e.target.value = value;
+            handleInput(e, rowIndex, colIndex);
+        });
+
+        return input;
     };
 
     const handleInput = (e, rowIndex, colIndex) => {
@@ -816,6 +799,22 @@ document.addEventListener("DOMContentLoaded", () => {
         // Disable the submit button
         submitButton.disabled = true;
 
+        // Every cell must be filled before a guess can be submitted.
+        const emptyInputs = Array.from(document.querySelectorAll(".grid-cell input")).filter(input => input.value === '');
+        if (emptyInputs.length > 0) {
+            emptyInputs.forEach(input => {
+                const cellDiv = input.closest('.grid-cell');
+                cellDiv.classList.add('shake');
+                setTimeout(() => cellDiv.classList.remove('shake'), 500);
+            });
+            updateResultMessage('Fill in every cell before submitting.');
+            emptyInputs[0].focus();
+            setTimeout(() => {
+                submitButton.disabled = false;
+            }, 1000);
+            return;
+        }
+
         let hasDuplicate = false;
         let firstDuplicateInput = null;
         document.querySelectorAll("input").forEach(input => {
@@ -901,21 +900,27 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     };
 
-    // Debounced save for performance
-    const saveGameState = debounce(() => {
-        const gameState = {
-            guessesLeft,
-            timeSpent,
-            guessHistory,
-            currentPuzzle,
-            userSolution: getUserSolution(),
-            cellStates: getCellStates(),
-            gameOver: guessesLeft <= 0 || checkAllCellsCorrect(getUserSolution(), currentPuzzle.answerGrid),
-            puzzleID: getCurrentPuzzleID()
-        };
-        localStorage.setItem('pseudokuGameState', JSON.stringify(gameState));
-    }, 300);
+    // Snapshot of the game for localStorage. puzzleID and puzzleDate are the
+    // puzzle being played, so a page left open past midnight saves correctly.
+    const buildGameState = () => ({
+        guessesLeft,
+        timeSpent,
+        guessHistory,
+        currentPuzzle,
+        userSolution: getUserSolution(),
+        cellStates: getCellStates(),
+        gameOver: guessesLeft <= 0 || checkAllCellsCorrect(getUserSolution(), currentPuzzle.answerGrid),
+        puzzleID,
+        puzzleDate
+    });
 
+    const writeGameState = () => {
+        if (!currentPuzzle) return; // nothing loaded yet
+        localStorage.setItem('pseudokuGameState', JSON.stringify(buildGameState()));
+    };
+
+    // Debounced save for performance
+    const saveGameState = debounce(writeGameState, 300);
 
     const getUserSolution = () => {
         const userSolution = [];
@@ -942,9 +947,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const loadGameState = () => {
         clearInterval(timerInterval); // Ensure any existing timer is cleared
-        const gameState = JSON.parse(localStorage.getItem('pseudokuGameState'));
-        const currentPuzzleID = getCurrentPuzzleID(); // Function to get the current puzzle ID
-        if (gameState && gameState.puzzleID === currentPuzzleID) {
+        let gameState = null;
+        try {
+            gameState = JSON.parse(localStorage.getItem('pseudokuGameState'));
+        } catch (e) { }
+        // Only resume a save from today's puzzle (same ID and same Chicago date).
+        if (gameState && gameState.puzzleID === puzzleID && gameState.puzzleDate === puzzleDate) {
             guessesLeft = gameState.guessesLeft;
             timeSpent = gameState.timeSpent; // Restore elapsed time
             guessHistory = gameState.guessHistory;
@@ -971,25 +979,13 @@ document.addEventListener("DOMContentLoaded", () => {
             // If the game was over, show the end game message
             if (gameState.gameOver) {
                 const message = guessesLeft <= 0 ? "Game over! You've used all your guesses." : "Congratulations! You've solved the puzzle!";
-                showEndGameMessage(message);
+                showEndGameMessage(message, { restoring: true });
             }
         } else {
             // No valid saved game state, load the current puzzle
             localStorage.removeItem('pseudokuGameState');
-            loadPuzzle(currentPuzzleID);
+            loadPuzzle(puzzleID);
         }
-    };
-
-    const getCurrentPuzzleID = () => {
-        const startDate = new Date('Tues May 21 2024 00:00:00 GMT-0500 (Central Daylight Time)'); // Replace with your chosen start date
-        const today = new Date();
-        const cstOffset = -5 * 60; // CST is UTC-5
-        const todayCST = new Date(today.getTime() + (today.getTimezoneOffset() + cstOffset) * 60000);
-        todayCST.setHours(0, 0, 0, 0);
-        const timeDifference = todayCST.getTime() - startDate.getTime();
-        const daysSinceStart = Math.ceil(timeDifference / (1000 * 3600 * 24));
-        const totalPuzzleIds = 10;
-        return ((daysSinceStart) % totalPuzzleIds) + 1;
     };
 
     const restoreUserSolution = (userSolution) => {
@@ -1010,15 +1006,9 @@ document.addEventListener("DOMContentLoaded", () => {
                             if (input) {
                                 input.value = value;
                             } else {
-                                const newInput = document.createElement('input');
-                                newInput.type = 'text';
-                                newInput.inputMode = 'numeric';
-                                newInput.maxLength = '1';
-                                newInput.pattern = '[1-9]';
-                                newInput.ariaLabel = 'Enter a number between 1 and 9';
+                                const newInput = createCellInput(rowIndex, colIndex);
                                 newInput.value = value;
                                 cellContent.appendChild(newInput);
-                                newInput.addEventListener('input', (e) => handleInput(e, rowIndex, colIndex));
                             }
                         }
                     }
@@ -1046,43 +1036,39 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     };
 
-    const loadPuzzle = async (puzzleID) => {
+    const loadPuzzle = (id) => {
+        currentPuzzle = allPuzzles.find(p => p.id === id);
+        if (!currentPuzzle) {
+            console.error(`Puzzle with ID ${id} not found`);
+            updateResultMessage("Sorry, today's puzzle couldn't be loaded.");
+            return;
+        }
+        timeSpent = 0; // Reset elapsed time
+        startTimer();
+        displayPuzzle(currentPuzzle.displayGrid);
+        displayClues(currentPuzzle.rowRules, currentPuzzle.colRules);
+    };
+
+    // Load the puzzle list first: today's puzzle ID depends on how many there are.
+    const initGame = async () => {
         try {
             const response = await fetch('grids.json');
-            const puzzles = await response.json();
-            currentPuzzle = puzzles.find(p => p.id === puzzleID);
-            if (!currentPuzzle) throw new Error(`Puzzle with ID ${puzzleID} not found`);
-
-            timeSpent = 0; // Reset elapsed time
-            startTimer();
-            displayPuzzle(currentPuzzle.displayGrid);
-            displayClues(currentPuzzle.rowRules, currentPuzzle.colRules);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            allPuzzles = await response.json();
         } catch (error) {
-            console.error('Error loading puzzle:', error);
+            console.error('Error loading puzzles:', error);
+            updateResultMessage("Sorry, today's puzzle couldn't be loaded.");
+            return;
         }
+        puzzleDate = getPuzzleDate();
+        puzzleID = getCurrentPuzzleID();
+        loadGameState();
     };
 
     document.getElementById("check-button").addEventListener("click", checkSolution);
 
-    // Initialize the game with the current puzzle ID
-    loadGameState();
+    initGame();
 
-    // Save game state at regular intervals (optional)
-    // Remove periodic save, rely on debounced saveGameState
-
-    // Save game state before the user leaves the page
-    window.addEventListener("beforeunload", () => {
-        // Save immediately on unload
-        const gameState = {
-            guessesLeft,
-            timeSpent,
-            guessHistory,
-            currentPuzzle,
-            userSolution: getUserSolution(),
-            cellStates: getCellStates(),
-            gameOver: guessesLeft <= 0 || checkAllCellsCorrect(getUserSolution(), currentPuzzle.answerGrid),
-            puzzleID: getCurrentPuzzleID()
-        };
-        localStorage.setItem('pseudokuGameState', JSON.stringify(gameState));
-    });
+    // Save immediately before the user leaves the page
+    window.addEventListener("beforeunload", writeGameState);
 });
