@@ -1,3 +1,20 @@
+/* Utilities */
+[hidden] {
+  display: none !important;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* Shake animation for duplicate guess prevention */
 .shake {
   animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
@@ -70,7 +87,12 @@
     background: #ffcdd2 !important;
     color: #b71c1c !important;
     border-color: #b71c1c !important;
+    text-decoration: line-through;
 }
+/* Shape cues alongside colour: correct = thick ring, close = dashed ring,
+   wrong = struck through. */
+.chip-correct { border-width: 3px !important; }
+.chip-hint { border-style: dashed !important; border-width: 2px !important; }
 .guess-history-empty {
     color: #aaa;
     font-size: 0.95em;
@@ -225,7 +247,6 @@ table#clues-table td, table#clues-table th {
 }
 
 .game-rules-section {
-    display: none; /* Initially hidden */
     padding: 0 20px;
     text-align: center; /* Center the content horizontally */
 }
@@ -292,6 +313,35 @@ table#clues-table td, table#clues-table th {
     position: relative;
     outline: 2px solid transparent; /* Add border to the cell */
 }
+
+/* Keyboard focus: a ring round the cell whose input has focus */
+.grid-cell:focus-within {
+    box-shadow: 0 0 0 3px #ffffff, 0 0 0 6px #6200ea;
+    z-index: 2;
+}
+
+/* Repeated guess */
+.grid-cell.duplicate {
+    outline-color: red;
+}
+
+/* Status symbols, so feedback doesn't rely on colour alone.
+   The "/ ''" gives the symbol empty alt text; the cell label says it. */
+.grid-cell.correct::after,
+.grid-cell.incorrect::after,
+.grid-cell.hint::after {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1;
+    pointer-events: none;
+    z-index: 1;
+}
+.grid-cell.correct::after { content: "✓"; content: "✓" / ""; color: #1b5e20; }
+.grid-cell.incorrect::after { content: "✗"; content: "✗" / ""; color: #b71c1c; }
+.grid-cell.hint::after { content: "≈"; content: "≈" / ""; color: #8d4a00; }
 
 .duplicate-message {
     position: absolute;
@@ -454,5 +504,203 @@ table#clues-table td, table#clues-table th {
     #share-options {
         flex-direction: column;
         gap: 6px;
+    }
+}
+
+/* --- End-of-game effects --- */
+.result-signifier {
+    display: inline-block;
+    font-size: 2em;
+    vertical-align: middle;
+}
+
+.result-animate-win {
+    animation: pop-bounce 0.7s cubic-bezier(.23,1.32,.59,.99);
+}
+
+.result-animate-lose {
+    animation: shake-lose 0.6s cubic-bezier(.36,.07,.19,.97);
+}
+
+@keyframes pop-bounce {
+    0% { transform: scale(0.2); opacity: 0; }
+    60% { transform: scale(1.3); opacity: 1; }
+    80% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+}
+
+@keyframes shake-lose {
+    0% { transform: translateX(0); }
+    20% { transform: translateX(-10px); }
+    40% { transform: translateX(10px); }
+    60% { transform: translateX(-8px); }
+    80% { transform: translateX(8px); }
+    100% { transform: translateX(0); }
+}
+
+/* Emoji rain for a win */
+.emoji-rain {
+    pointer-events: none;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    overflow: visible;
+}
+
+.emoji-raindrop {
+    position: absolute;
+    font-size: 2.2em;
+    will-change: transform, opacity;
+    user-select: none;
+    pointer-events: none;
+    animation: emoji-fall 1.5s linear forwards;
+}
+
+@keyframes emoji-fall {
+    0% { transform: translateY(-10vh) scale(0.7) rotate(-10deg); opacity: 0.7; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(100vh) scale(1.1) rotate(10deg); opacity: 0; }
+}
+
+/* Large emoji overlay for a loss */
+.emoji-overlay {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    animation: overlay-fade 2.2s cubic-bezier(.23,1.32,.59,.99);
+}
+
+.emoji-overlay-inner {
+    font-size: 8em;
+    filter: drop-shadow(0 0 16px #b00020cc);
+    animation: pop-bounce 0.7s cubic-bezier(.23,1.32,.59,.99);
+}
+
+@keyframes overlay-fade {
+    0% { opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* --- Stats dialog --- */
+.stats-dialog {
+    width: min(600px, calc(100vw - 32px));
+    max-height: calc(100vh - 80px);
+    box-sizing: border-box;
+    padding: 24px;
+    border: none;
+    border-radius: 12px;
+    color: #333;
+    font-family: 'Nunito', sans-serif;
+}
+
+.stats-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.stats-dialog h2 {
+    margin-top: 0;
+}
+
+.stats-close {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    font-size: 1.5em;
+    line-height: 1;
+    padding: 4px 8px;
+    background: none;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.stats-close:focus-visible {
+    outline: 3px solid #6200ea;
+}
+
+.stats-summary {
+    display: grid;
+    grid-template-columns: max-content auto;
+    gap: 4px 12px;
+    margin: 0 0 16px;
+}
+
+.stats-summary dt {
+    font-weight: 700;
+}
+
+.stats-summary dd {
+    margin: 0;
+}
+
+.stats-chart-status:empty {
+    display: none;
+}
+
+.stats-chart {
+    margin-bottom: 16px;
+}
+
+.stats-chart-pie {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* --- Toast --- */
+.toast {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translate(-50%, 20px);
+    max-width: calc(100vw - 32px);
+    padding: 10px 18px;
+    background: #333;
+    color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    font-size: 0.95rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 10001;
+}
+
+.toast.visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+/* --- Reduced motion: no shakes, bounces, scaling or rain --- */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .button:hover {
+        transform: none;
+    }
+
+    .emoji-rain,
+    .emoji-overlay {
+        display: none;
     }
 }
