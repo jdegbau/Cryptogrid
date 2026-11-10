@@ -1,0 +1,11 @@
+{
+  "name": "pseudoku",
+  "private": true,
+  "type": "module",
+  "description": "Pseudoku daily logic puzzle",
+  "scripts": {
+    "test": "node --test",
+    "verify": "node gridGenerator.js --verify",
+    "generate": "node gridGenerator.js"
+  }
+}

@@ -1,25 +1,460 @@
-/* Shake animation for duplicate guess prevention */
-.shake {
-  animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+/* ==========================================================================
+   Colours. Every colour lives here; the dark theme follows the system
+   setting. Text/background pairs meet WCAG AA (4.5:1) in both themes.
+   ========================================================================== */
+:root {
+    color-scheme: light;
+
+    --bg: #f0f0f0;
+    --surface: #ffffff;
+    --surface-alt: #e8eaf6;      /* main play area */
+    --text: #333333;
+    --text-muted: #666666;
+    --border: #dddddd;
+    --row-alt: #f0f0f0;
+    --shadow: rgba(0, 0, 0, 0.1);
+
+    --primary: #6200ea;
+    --primary-strong: #3700b3;
+    --on-primary: #ffffff;
+    --header-bg: #6200ea;
+    --tab-bg: #f0f0f0;
+    --tab-hover: #e0e0e0;
+    --button-disabled-bg: #cccccc;
+    --button-disabled-text: #666666;
+
+    --cell-bg: #bbdefb;
+    --cell-text: #6200ea;
+    --label-text: #6200ea;
+    --preset-bg: #80d8ff;
+    --preset-text: #01579b;
+    --correct-bg: #c8e6c9;
+    --correct-text: #1b5e20;
+    --incorrect-bg: #ffcdd2;
+    --incorrect-text: #b71c1c;
+    --hint-bg: #ffeb3b;
+    --hint-text: #6b4400;
+    --revealed-bg: #ffcc80;
+    --revealed-text: #9a2a00;
+
+    --focus-ring: #6200ea;
+    --error-bg: #c62828;
+    --error-text: #ffffff;
+    --clue-active-bg: #fff3c4;
+
+    --popover-bg: #ffffff;
+    --popover-border: #bbbbbb;
+    --chip-bg: #e8eaf6;
+    --chip-text: #6200ea;
+    --chip-border: #bdbdbd;
+
+    --toast-bg: #333333;
+    --toast-text: #ffffff;
+    --backdrop: rgba(0, 0, 0, 0.7);
 }
 
-@keyframes shake {
-  10%, 90% { transform: translateX(-2px); }
-  20%, 80% { transform: translateX(4px); }
-  30%, 50%, 70% { transform: translateX(-8px); }
-  40%, 60% { transform: translateX(8px); }
-  100% { transform: translateX(0); }
+@media (prefers-color-scheme: dark) {
+    :root {
+        color-scheme: dark;
+
+        --bg: #121212;
+        --surface: #1e1e2a;
+        --surface-alt: #181826;
+        --text: #e6e6eb;
+        --text-muted: #a6a6b4;
+        --border: #33334a;
+        --row-alt: #24243a;
+        --shadow: rgba(0, 0, 0, 0.5);
+
+        --primary: #5b2bd6;
+        --primary-strong: #7c4dff;
+        --on-primary: #ffffff;
+        --header-bg: #3d1a99;
+        --tab-bg: #26263a;
+        --tab-hover: #30304a;
+        --button-disabled-bg: #3a3a4a;
+        --button-disabled-text: #a6a6b4;
+
+        --cell-bg: #26324a;
+        --cell-text: #d6c8ff;
+        --label-text: #b39dff;
+        --preset-bg: #0d3b5c;
+        --preset-text: #a8e1ff;
+        --correct-bg: #1b3d20;
+        --correct-text: #a5d6a7;
+        --incorrect-bg: #4a1c1f;
+        --incorrect-text: #ffabab;
+        --hint-bg: #4a3c00;
+        --hint-text: #ffe27a;
+        --revealed-bg: #4d2a00;
+        --revealed-text: #ffbf80;
+
+        --focus-ring: #b39dff;
+        --clue-active-bg: #4a3c00;
+
+        --popover-bg: #26263a;
+        --popover-border: #44445a;
+        --chip-bg: #2a2a40;
+        --chip-text: #d6c8ff;
+        --chip-border: #55556a;
+
+        --toast-bg: #e6e6eb;
+        --toast-text: #121212;
+        --backdrop: rgba(0, 0, 0, 0.8);
+    }
 }
-/* Guess history popover styles */
+
+/* ==========================================================================
+   Utilities
+   ========================================================================== */
+[hidden] {
+    display: none !important;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ==========================================================================
+   Page layout
+   ========================================================================== */
+body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    color: var(--text);
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 90%;
+    max-width: 1000px;
+    background: var(--surface);
+    border-radius: 10px;
+    box-shadow: 0 5px 15px var(--shadow);
+    overflow: hidden;
+}
+
+.header {
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--header-bg);
+    color: var(--on-primary);
+    padding: 20px;
+    text-align: center;
+}
+
+.header .title {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.puzzle-info {
+    margin-top: 4px;
+    font-size: 0.95rem;
+    opacity: 0.9;
+}
+
+.header .status {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    margin-top: 10px;
+}
+
+.header .timer,
+.header .errors {
+    font-size: 1rem;
+}
+
+.guess-icon {
+    margin: 0 2px;
+}
+
+.main {
+    display: flex;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 20px;
+    background: var(--surface-alt);
+    flex-wrap: nowrap;
+    align-items: flex-start;
+}
+
+/* ==========================================================================
+   Clues and rules
+   ========================================================================== */
+.clues-section {
+    width: 30%;
+    background: var(--surface);
+    border-radius: 5px;
+    box-shadow: 0 2px 5px var(--shadow);
+    min-height: 500px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.content {
+    width: 100%;
+}
+
+.tabs {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.tab-button {
+    background: var(--tab-bg);
+    color: var(--text);
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    transition: background 0.3s;
+    font-size: 1rem;
+    font-family: inherit;
+    width: 50%;
+    border-bottom: 2px solid var(--primary);
+}
+
+.tab-button:hover {
+    background: var(--tab-hover);
+}
+
+.tab-button.active {
+    background: var(--primary);
+    color: var(--on-primary);
+    border-bottom: none;
+}
+
+.tab-button:focus-visible {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: -3px;
+}
+
+.clues-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.75rem;
+}
+
+.clues-table th,
+.clues-table td {
+    padding: 10px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+}
+
+.clues-table thead th {
+    background: var(--primary);
+    color: var(--on-primary);
+    text-transform: uppercase;
+    font-size: 1rem;
+}
+
+.clues-table tbody th {
+    font-weight: 400;
+}
+
+.clues-table tbody tr:nth-child(even) {
+    background: var(--row-alt);
+}
+
+/* The row and column clues for the cell in focus (or under the pointer) */
+.clues-table tbody tr.clue-active {
+    background: var(--clue-active-bg);
+    box-shadow: inset 4px 0 0 var(--primary);
+    font-weight: 700;
+}
+
+.game-rules-section {
+    padding: 0 20px;
+}
+
+.rules-content {
+    text-align: left;
+    font-size: 1rem;
+}
+
+.rules-content p {
+    margin: 10px 0;
+}
+
+.rules-content .emoji-explanation {
+    display: flex;
+    align-items: center;
+    margin: 5px 0;
+}
+
+.rules-content .emoji-explanation span {
+    margin-left: 10px;
+    font-size: 1rem;
+}
+
+.rules-content .difficulty-note {
+    color: var(--text-muted);
+}
+
+/* ==========================================================================
+   Grid
+   ========================================================================== */
+.grid-section {
+    width: 70%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.grid-cells {
+    display: grid;
+    grid-template-columns: auto repeat(4, minmax(75px, 1fr)) auto;
+    grid-template-rows: auto repeat(4, minmax(75px, 1fr)) auto;
+    gap: 8px;
+}
+
+.grid-cell,
+.row-label,
+.column-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: var(--label-text);
+    padding: 2px;
+    margin: 0;
+}
+
+.grid-cell {
+    position: relative;
+    width: 100%;
+    padding-top: 100%;
+    background: var(--cell-bg);
+    color: var(--cell-text);
+    border-radius: 5px;
+    outline: 2px solid transparent;
+    transition: background 0.3s, transform 0.3s;
+}
+
+/* Keyboard focus: a ring round the cell whose input has focus */
+.grid-cell:focus-within {
+    box-shadow: 0 0 0 3px var(--surface-alt), 0 0 0 6px var(--focus-ring);
+    z-index: 2;
+}
+
+/* Repeated guess */
+.grid-cell.duplicate {
+    outline-color: var(--error-bg);
+}
+
+.duplicate-message {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--error-bg);
+    color: var(--error-text);
+    padding: 2px 5px;
+    font-size: 0.75rem;
+    border-radius: 3px;
+    white-space: nowrap;
+    z-index: 3;
+    pointer-events: none;
+}
+
+.grid-cell-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    border-radius: inherit;
+}
+
+.grid-cell input {
+    width: 100%;
+    height: 100%;
+    font-size: 2.5rem;
+    font-family: inherit;
+    color: inherit;
+    border: none;
+    background: transparent;
+    text-align: center;
+    outline: none; /* the cell's :focus-within ring replaces it */
+    box-sizing: border-box;
+}
+
+.grid-cell.preset .grid-cell-content { background: var(--preset-bg); color: var(--preset-text); }
+.grid-cell.correct .grid-cell-content { background: var(--correct-bg); color: var(--correct-text); }
+.grid-cell.incorrect .grid-cell-content { background: var(--incorrect-bg); color: var(--incorrect-text); }
+.grid-cell.hint .grid-cell-content { background: var(--hint-bg); color: var(--hint-text); }
+.grid-cell.revealed .grid-cell-content { background: var(--revealed-bg); color: var(--revealed-text); }
+
+/* Status symbols, so feedback doesn't rely on colour alone.
+   The "/ ''" gives the symbol empty alt text; the cell label says it. */
+.grid-cell.correct::after,
+.grid-cell.incorrect::after,
+.grid-cell.hint::after {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1;
+    pointer-events: none;
+    z-index: 1;
+}
+.grid-cell.correct::after { content: "✓"; content: "✓" / ""; color: var(--correct-text); }
+.grid-cell.incorrect::after { content: "✗"; content: "✗" / ""; color: var(--incorrect-text); }
+.grid-cell.hint::after { content: "≈"; content: "≈" / ""; color: var(--hint-text); }
+
+/* Clues for the active cell, under the grid on small screens */
+.active-clues {
+    display: none;
+    margin: 12px 0 0;
+    padding: 8px 12px;
+    max-width: 360px;
+    background: var(--surface);
+    border-left: 4px solid var(--primary);
+    border-radius: 4px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.active-clues strong {
+    color: var(--label-text);
+}
+
+/* Guess-history popover */
 .guess-history-popover {
     position: absolute;
     bottom: 110%;
     left: 50%;
     transform: translateX(-50%);
-    background: #fff;
-    border: 1px solid #bbb;
+    background: var(--popover-bg);
+    border: 1px solid var(--popover-border);
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    box-shadow: 0 2px 8px var(--shadow);
     padding: 6px 10px;
     display: flex;
     flex-direction: column;
@@ -41,9 +476,10 @@
     align-items: center;
     justify-items: center;
 }
+
 .guess-chip {
-    background: #e8eaf6;
-    color: #6200ea;
+    background: var(--chip-bg);
+    color: var(--chip-text);
     border-radius: 50%;
     width: 2em;
     height: 2em;
@@ -52,310 +488,37 @@
     justify-content: center;
     font-weight: bold;
     font-size: 1.1em;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
-    border: 1px solid #bdbdbd;
-    transition: background 0.2s, color 0.2s;
+    box-shadow: 0 1px 2px var(--shadow);
+    border: 1px solid var(--chip-border);
 }
-.chip-correct {
-    background: #c8e6c9 !important;
-    color: #1b5e20 !important;
-    border-color: #388e3c !important;
-}
-.chip-hint {
-    background: #ffeb3b !important;
-    color: #f57f17 !important;
-    border-color: #fbc02d !important;
-}
-.chip-incorrect {
-    background: #ffcdd2 !important;
-    color: #b71c1c !important;
-    border-color: #b71c1c !important;
-}
+
+/* Shape cues alongside colour: correct = thick ring, close = dashed ring,
+   wrong = struck through. */
+.chip-correct { background: var(--correct-bg); color: var(--correct-text); border: 3px solid var(--correct-text); }
+.chip-hint { background: var(--hint-bg); color: var(--hint-text); border: 2px dashed var(--hint-text); }
+.chip-incorrect { background: var(--incorrect-bg); color: var(--incorrect-text); border-color: var(--incorrect-text); text-decoration: line-through; }
+
 .guess-history-empty {
-    color: #aaa;
+    color: var(--text-muted);
     font-size: 0.95em;
 }
 
-@media (max-width: 768px) {
-    .guess-history-popover {
-        font-size: 1.2rem;
-        min-width: 40px;
-        max-width: 90px;
-        padding: 8px 6px;
-    }
-    .guess-chip {
-        width: 1.7em;
-        height: 1.7em;
-        font-size: 1em;
-    }
-}
-/* General Styles */
-body {
-    font-family: 'Nunito', sans-serif;
-    background: #f0f0f0;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    color: #333;
+/* Shake for refused submits */
+.shake {
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
 }
 
-.container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 90%;
-    max-width: 1000px; /* Increase max-width to accommodate two columns */
-    background: #ffffff;
-    border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
+@keyframes shake {
+    10%, 90% { transform: translateX(-2px); }
+    20%, 80% { transform: translateX(4px); }
+    30%, 50%, 70% { transform: translateX(-8px); }
+    40%, 60% { transform: translateX(8px); }
+    100% { transform: translateX(0); }
 }
 
-.header {
-    width: 100%;
-    background: #6200ea;
-    color: #ffffff;
-    padding: 20px;
-    text-align: center;
-}
-
-.header .title {
-    margin: 0;
-    font-size: 2rem;
-    font-weight: 700;
-}
-
-.header .status {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    margin-top: 10px;
-}
-
-.header .timer,
-.header .errors {
-    font-size: 1rem;
-}
-
-.guess-icon {
-    margin: 0 2px;
-}
-
-.main {
-    display: flex;
-    width: 100%;
-    padding: 20px;
-    background: #e8eaf6;
-    flex-wrap: nowrap;
-    align-items: flex-start;
-}
-
-.clues-section {
-    width: 30%; /* Fixed width for clues section */
-    background: #ffffff;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    height: 500px; /* Fixed height */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.content {
-    width: 100%;
-}
-
-.tabs {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-}
-
-.tab-button {
-    background: #f0f0f0;
-    border: none;
-    padding: 10px;
-    cursor: pointer;
-    transition: background 0.3s;
-    font-size: 1rem;
-    width: 50%;
-    border-bottom: 2px solid #6200ea;
-}
-
-.tab-button:hover {
-    background: #e0e0e0;
-}
-
-.tab-button.active {
-    background: #6200ea;
-    color: #ffffff;
-    border-bottom: none;
-}
-
-#row-clues tr, #col-clues tr {
-    font-size: .75rem;
-}
-
-.clues-table {
-    width: 100%;
-    border-collapse: collapse;
-    flex-grow: 1;
-}
-
-table#clues-table td, table#clues-table th {
-    text-align: center;
-}
-
-.clues-table th, .clues-table td {
-    padding: 10px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-}
-
-.clues-table th {
-    background: #6200ea;
-    color: #ffffff;
-    text-transform: uppercase;
-}
-
-.clues-table tbody tr:nth-child(even) {
-    background: #f0f0f0;
-}
-
-.game-rules-section {
-    display: none; /* Initially hidden */
-    padding: 0 20px;
-    text-align: center; /* Center the content horizontally */
-}
-
-.game-rules-section h2 {
-    text-align: center; /* Center the content horizontally */
-}
-
-.rules-content {
-    text-align: left; /* Align text to the left */
-    font-size: 1rem;
-}
-
-.rules-content p {
-    margin: 10px 0;
-}
-
-.rules-content .emoji-explanation {
-    display: flex;
-    align-items: center;
-    margin: 5px 0;
-}
-
-.rules-content .emoji-explanation span {
-    margin-left: 10px;
-    font-size: 1rem;
-    color: #333;
-}
-
-.grid-section {
-    width: 70%; /* Remaining width for grid section */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.grid-cells {
-    display: grid;
-    grid-template-columns: auto repeat(4, minmax(75px, 1fr)) auto; /* Adjust to add extra column for labels */
-    grid-template-rows: auto repeat(4, minmax(75px, 1fr)) auto; /* Adjust to add extra row for labels */
-    gap: 8px;
-}
-
-.grid-cell, .row-label, .column-label {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    color: #6200ea;
-    padding: 2px; /* Reduce padding */
-    margin: 0; /* Remove margin */
-}
-
-.grid-cell {
-    position: relative;
-    width: 100%;
-    padding-top: 100%;
-    background: #bbdefb;
-    border-radius: 5px;
-    transition: background 0.3s, transform 0.3s;
-}
-
-.grid-cell {
-    position: relative;
-    outline: 2px solid transparent; /* Add border to the cell */
-}
-
-.duplicate-message {
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: red;
-    color: white;
-    padding: 2px 5px;
-    font-size: 0.75rem;
-    border-radius: 3px;
-    white-space: nowrap;
-    z-index: 1;
-    pointer-events: none;
-}
-
-.grid-cell-content {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2.5rem;
-}
-
-.grid-cell input {
-    width: 100%;
-    height: 100%;
-    font-size: 2.5rem;
-    border: none;
-    background: transparent;
-    text-align: center;
-    outline: none;
-    box-sizing: border-box;
-}
-
-.grid-cell.preset .grid-cell-content {
-    background: #80d8ff;
-    color: #01579b;
-}
-
-.grid-cell.correct .grid-cell-content {
-    background: #c8e6c9;
-    color: #1b5e20;
-}
-
-.grid-cell.incorrect .grid-cell-content {
-    background: #ffcdd2;
-    color: #b71c1c;
-}
-
-.grid-cell.hint .grid-cell-content {
-    background: #ffeb3b;
-    color: #f57f17;
-}
-
-.grid-cell.revealed .grid-cell-content {
-    background: #ffcc80; /* Light orange background */
-    color: #d84315; /* Dark orange text */
-}
-
+/* ==========================================================================
+   Controls
+   ========================================================================== */
 .controls-section {
     display: flex;
     flex-direction: column;
@@ -365,37 +528,41 @@ table#clues-table td, table#clues-table th {
 
 .button {
     padding: 10px 20px;
-    background: #6200ea;
-    color: #ffffff;
+    background: var(--primary);
+    color: var(--on-primary);
     border: none;
     border-radius: 5px;
     cursor: pointer;
     transition: background 0.3s, transform 0.3s, box-shadow 0.3s;
     font-size: 1rem;
+    font-family: inherit;
     font-weight: 600;
     margin: 10px 0;
 }
 
-/* Hover state */
 .button:hover {
-    background: #3700b3;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    background: var(--primary-strong);
+    box-shadow: 0 4px 8px var(--shadow);
     transform: scale(1.05);
 }
 
-/* Active state */
 .button:active {
-    background: #6200ea;
+    background: var(--primary);
     transform: scale(1);
     box-shadow: none;
 }
 
-/* Disabled state */
+.button:focus-visible {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 3px;
+}
+
 .button:disabled {
-    background: #ccc;
-    color: #666;
+    background: var(--button-disabled-bg);
+    color: var(--button-disabled-text);
     cursor: not-allowed;
-    opacity: 0.6;
+    transform: none;
+    box-shadow: none;
 }
 
 .result {
@@ -404,7 +571,204 @@ table#clues-table td, table#clues-table th {
     text-align: center;
 }
 
-/* Responsive Styles */
+.countdown {
+    margin: 4px 0 0;
+    font-size: 1rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.countdown strong {
+    color: var(--text);
+}
+
+/* ==========================================================================
+   End-of-game effects
+   ========================================================================== */
+.result-signifier {
+    display: inline-block;
+    font-size: 2em;
+    vertical-align: middle;
+}
+
+.result-animate-win {
+    animation: pop-bounce 0.7s cubic-bezier(.23,1.32,.59,.99);
+}
+
+.result-animate-lose {
+    animation: shake-lose 0.6s cubic-bezier(.36,.07,.19,.97);
+}
+
+@keyframes pop-bounce {
+    0% { transform: scale(0.2); opacity: 0; }
+    60% { transform: scale(1.3); opacity: 1; }
+    80% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+}
+
+@keyframes shake-lose {
+    0% { transform: translateX(0); }
+    20% { transform: translateX(-10px); }
+    40% { transform: translateX(10px); }
+    60% { transform: translateX(-8px); }
+    80% { transform: translateX(8px); }
+    100% { transform: translateX(0); }
+}
+
+.emoji-rain {
+    pointer-events: none;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    overflow: visible;
+}
+
+.emoji-raindrop {
+    position: absolute;
+    font-size: 2.2em;
+    will-change: transform, opacity;
+    user-select: none;
+    pointer-events: none;
+    animation: emoji-fall 1.5s linear forwards;
+}
+
+@keyframes emoji-fall {
+    0% { transform: translateY(-10vh) scale(0.7) rotate(-10deg); opacity: 0.7; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(100vh) scale(1.1) rotate(10deg); opacity: 0; }
+}
+
+.emoji-overlay {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    animation: overlay-fade 2.2s cubic-bezier(.23,1.32,.59,.99);
+}
+
+.emoji-overlay-inner {
+    font-size: 8em;
+    filter: drop-shadow(0 0 16px #b00020cc);
+    animation: pop-bounce 0.7s cubic-bezier(.23,1.32,.59,.99);
+}
+
+@keyframes overlay-fade {
+    0% { opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* ==========================================================================
+   Stats dialog
+   ========================================================================== */
+.stats-dialog {
+    width: min(600px, calc(100vw - 32px));
+    max-height: calc(100vh - 80px);
+    box-sizing: border-box;
+    padding: 24px;
+    border: none;
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+}
+
+.stats-dialog::backdrop {
+    background: var(--backdrop);
+}
+
+.stats-dialog h2 {
+    margin-top: 0;
+}
+
+.stats-close {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    font-size: 1.5em;
+    line-height: 1;
+    padding: 4px 8px;
+    background: none;
+    color: var(--text);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.stats-close:focus-visible {
+    outline: 3px solid var(--focus-ring);
+}
+
+.stats-summary {
+    display: grid;
+    grid-template-columns: max-content auto;
+    gap: 4px 12px;
+    margin: 0 0 16px;
+}
+
+.stats-summary dt {
+    font-weight: 700;
+}
+
+.stats-summary dd {
+    margin: 0;
+}
+
+.stats-chart-status:empty {
+    display: none;
+}
+
+.stats-chart {
+    margin-bottom: 16px;
+}
+
+.stats-chart-pie {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* ==========================================================================
+   Toast
+   ========================================================================== */
+.toast {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translate(-50%, 20px);
+    max-width: calc(100vw - 32px);
+    padding: 10px 18px;
+    background: var(--toast-bg);
+    color: var(--toast-text);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px var(--shadow);
+    font-size: 0.95rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 10001;
+}
+
+.toast.visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+/* ==========================================================================
+   Small screens
+   ========================================================================== */
 @media (max-width: 768px) {
     .container {
         width: 100%;
@@ -421,10 +785,13 @@ table#clues-table td, table#clues-table th {
 
     section#clues-container {
         order: 2;
-        height: auto;
+        min-height: 0;
     }
 
-    .clues-section, .game-rules-section, .grid-section, .controls-section {
+    .clues-section,
+    .game-rules-section,
+    .grid-section,
+    .controls-section {
         width: 100%;
         margin-right: 0;
         margin-bottom: 20px;
@@ -436,13 +803,22 @@ table#clues-table td, table#clues-table th {
         gap: 4px;
     }
 
-    .grid-cell, .row-label, .column-label {
+    .grid-cell,
+    .row-label,
+    .column-label {
         font-size: 1rem;
         padding: 0;
     }
 
-    .grid-cell-content, .grid-cell input {
+    .grid-cell-content,
+    .grid-cell input {
         font-size: 1.3rem;
+    }
+
+    .active-clues {
+        display: block;
+        box-sizing: border-box;
+        width: calc(100% - 16px);
     }
 
     .button {
@@ -451,8 +827,39 @@ table#clues-table td, table#clues-table th {
         margin: 6px 0;
     }
 
-    #share-options {
-        flex-direction: column;
-        gap: 6px;
+    .guess-history-popover {
+        font-size: 1.2rem;
+        min-width: 40px;
+        max-width: 90px;
+        padding: 8px 6px;
+    }
+
+    .guess-chip {
+        width: 1.7em;
+        height: 1.7em;
+        font-size: 1em;
+    }
+}
+
+/* ==========================================================================
+   Reduced motion: no shakes, bounces, scaling or rain
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .button:hover {
+        transform: none;
+    }
+
+    .emoji-rain,
+    .emoji-overlay {
+        display: none;
     }
 }
