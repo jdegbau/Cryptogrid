@@ -51,7 +51,7 @@ export const updateGuessIcons = (guessesLeft, totalGuesses) => {
 
 export const setupTabs = () => {
     const tabs = [
-        { button: document.getElementById('clues-tab'), panel: document.getElementById('clues-table') },
+        { button: document.getElementById('clues-tab'), panel: document.getElementById('clues-panel') },
         { button: document.getElementById('rules-tab'), panel: document.getElementById('game-rules-container') }
     ];
     const select = (active) => {

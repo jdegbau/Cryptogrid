@@ -1,5 +1,5 @@
 // Cell inputs and the guess-history popover.
-import { editableInputs } from './grid.js';
+import { editableInputs, clueId } from './grid.js';
 
 const ALLOWED_KEYS = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
 
@@ -34,6 +34,7 @@ export const createCellInput = (row, col, { getGuesses }) => {
     input.maxLength = 1;
     input.pattern = '[1-9]';
     input.autocomplete = 'off';
+    input.setAttribute('aria-describedby', `${clueId('row', row)} ${clueId('col', col)}`);
     input.dataset.row = row;
     input.dataset.col = col;
 

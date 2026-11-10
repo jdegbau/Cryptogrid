@@ -6,19 +6,22 @@
 // (see js/encoding.js) so they can't be read at a glance.
 //
 // Usage:
-//   node gridGenerator.js [count] [startId] > grids.json   generate puzzles
+//   node gridGenerator.js [count] [startId] > grids.json   generate puzzles (count: a multiple of 7)
 //   node gridGenerator.js --verify [file]                   check a puzzle file
 //   node gridGenerator.js --encode [file] > out.json        encode plain answerGrid entries
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { THRESHOLD, checkRule } from './js/rules.js';
+import { weekdayForPuzzleID, WEEKDAYS } from './js/date.js';
 import { countSolutions, MIN_CELL_VALUE, MAX_CELL_VALUE } from './js/solver.js';
 import { encodeAnswer, getAnswerGrid } from './js/encoding.js';
 
 const SIZE = 4;
-const MIN_DISPLAY_CELLS = 8;   // pre-filled cells per puzzle (inclusive range)
-const MAX_DISPLAY_CELLS = 10;
+const MIN_DISPLAY_CELLS = 8;   // pre-filled cells per puzzle (inclusive range),
+const MAX_DISPLAY_CELLS = 9;   // so every puzzle has 7 or 8 blanks
+const RANDOM_REVEALS = 5;      // reveal this many at random, then choose the rest greedily
+const COUNT_CAP = 2000;        // stop counting solutions past this when comparing reveals
 const MAX_ROW_COL_FILL = 3;    // every row and column keeps at least one blank
 const SUM_RULE_MAX = 30;       // only offer "sum is N" when N is at most this
 const MAX_SUM_RULES = 4;       // cap exact-sum clues per puzzle so clues stay varied
@@ -93,46 +96,105 @@ const determineRules = (grid) => {
     return { rowRules, colRules };
 };
 
-// Reveal answer cells one at a time (in random order, keeping at least one
-// blank per row and column) until the puzzle has a single solution.
-// Returns null if that can't be done within MAX_DISPLAY_CELLS.
+// Reveal answer cells (keeping at least one blank per row and column) until
+// the puzzle has a single solution. The first few are random; after that each
+// reveal is the cell that rules out the most solutions, so uniqueness comes
+// with as few givens as possible. Returns null if it needs more than
+// MAX_DISPLAY_CELLS.
 const generateDisplayGrid = (answerGrid, rowRules, colRules) => {
     const size = answerGrid.length;
     const displayGrid = answerGrid.map(row => row.map(() => null));
     const rowFill = new Array(size).fill(0);
     const colFill = new Array(size).fill(0);
-    const coords = [];
-    for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) coords.push([r, c]);
-    shuffle(coords);
-
-    let filled = 0;
-    for (const [r, c] of coords) {
-        if (rowFill[r] >= MAX_ROW_COL_FILL || colFill[c] >= MAX_ROW_COL_FILL) continue;
+    const open = () => {
+        const coords = [];
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                if (displayGrid[r][c] === null && rowFill[r] < MAX_ROW_COL_FILL && colFill[c] < MAX_ROW_COL_FILL) coords.push([r, c]);
+            }
+        }
+        return shuffle(coords);
+    };
+    const reveal = ([r, c]) => {
         displayGrid[r][c] = answerGrid[r][c];
         rowFill[r]++;
         colFill[c]++;
-        filled++;
-        if (filled >= MIN_DISPLAY_CELLS && countSolutions(displayGrid, rowRules, colRules) === 1) {
+    };
+
+    for (let filled = 0; filled < MAX_DISPLAY_CELLS; filled++) {
+        const options = open();
+        if (options.length === 0) return null;
+        let best = options[0];
+        let bestCount = Infinity;
+        if (filled >= RANDOM_REVEALS) {
+            for (const [r, c] of options) {
+                displayGrid[r][c] = answerGrid[r][c];
+                const count = countSolutions(displayGrid, rowRules, colRules, COUNT_CAP);
+                displayGrid[r][c] = null;
+                if (count < bestCount) {
+                    best = [r, c];
+                    bestCount = count;
+                }
+                if (count === 1) break;
+            }
+        }
+        reveal(best);
+        if (filled + 1 >= MIN_DISPLAY_CELLS && countSolutions(displayGrid, rowRules, colRules) === 1) {
             return displayGrid;
         }
-        if (filled >= MAX_DISPLAY_CELLS) return null;
     }
     return null;
 };
 
-const generatePuzzle = (id, size) => {
+// How much searching the solver needs to prove the answer: more partial
+// grids tried means the clues pin the answer down less directly.
+const difficultyScore = (puzzle) => {
+    const stats = {};
+    countSolutions(puzzle.displayGrid, puzzle.rowRules, puzzle.colRules, 2, stats);
+    const blanks = puzzle.displayGrid.flat().filter(v => v === null).length;
+    return Math.log2(stats.nodes + 1) + blanks;
+};
+
+// Labels by weekday: Monday easiest, Sunday hardest.
+const LEVELS = ['Easy', 'Easy', 'Medium', 'Medium', 'Hard', 'Hard', 'Expert'];
+
+const generatePuzzle = (size) => {
     for (;;) {
         const answerGrid = generateRandomGrid(size);
         const { rowRules, colRules } = determineRules(answerGrid);
         const sumRules = [...rowRules, ...colRules].filter(r => r.rule === 'sum').length;
         if (sumRules > MAX_SUM_RULES) continue;
         const displayGrid = generateDisplayGrid(answerGrid, rowRules, colRules);
-        if (displayGrid) return { id, answer: encodeAnswer(answerGrid, id), displayGrid, rowRules, colRules };
+        if (displayGrid) return { answerGrid, displayGrid, rowRules, colRules };
     }
 };
 
-export const generatePuzzles = (numPuzzles, size = SIZE, startId = 1) =>
-    Array.from({ length: numPuzzles }, (_, i) => generatePuzzle(startId + i, size));
+// Generate a pool, rank it by difficulty, and hand the easiest puzzles to
+// Mondays and the hardest to Sundays (by the weekday each ID falls on).
+export const generatePuzzles = (numPuzzles, size = SIZE, startId = 1, log = () => {}) => {
+    const pool = [];
+    for (let i = 0; i < numPuzzles; i++) {
+        const puzzle = generatePuzzle(size);
+        puzzle.score = difficultyScore(puzzle);
+        pool.push(puzzle);
+        if ((i + 1) % 10 === 0) log(`${i + 1}/${numPuzzles}`);
+    }
+    pool.sort((a, b) => a.score - b.score);
+
+    const ids = Array.from({ length: numPuzzles }, (_, i) => startId + i);
+    const idsByWeekday = WEEKDAYS.map((_, day) => ids.filter(id => weekdayForPuzzleID(id) === day));
+    const puzzles = [];
+    let next = 0;
+    idsByWeekday.forEach((dayIds, day) => {
+        const band = shuffle(pool.slice(next, next + dayIds.length));
+        next += dayIds.length;
+        dayIds.forEach((id, i) => {
+            const { answerGrid, displayGrid, rowRules, colRules } = band[i];
+            puzzles.push({ id, difficulty: LEVELS[day], answer: encodeAnswer(answerGrid, id), displayGrid, rowRules, colRules });
+        });
+    });
+    return puzzles.sort((a, b) => a.id - b.id);
+};
 
 // Replace any plain answerGrid with an encoded answer.
 export const encodePuzzles = (puzzles) => puzzles.map(({ answerGrid, ...rest }) => (
@@ -168,8 +230,9 @@ if (isMain) {
     } else if (args[0] === '--encode') {
         console.log(JSON.stringify(encodePuzzles(readPuzzles(args[1])), null, 2));
     } else {
-        const count = parseInt(args[0], 10) || 150;
+        const count = parseInt(args[0], 10) || 154;
         const startId = parseInt(args[1], 10) || 1;
-        console.log(JSON.stringify(generatePuzzles(count, SIZE, startId), null, 2));
+        if (count % 7 !== 0) console.error(`Note: ${count} is not a multiple of 7, so puzzles won't keep their weekday when the list repeats.`);
+        console.log(JSON.stringify(generatePuzzles(count, SIZE, startId, console.error), null, 2));
     }
 }

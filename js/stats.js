@@ -5,7 +5,14 @@ import { readStats, summarizeStats } from './storage.js';
 const CHART_JS_SRC = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js';
 const CHART_JS_INTEGRITY = 'sha384-dug+JxfBvklEQdJ4AYuBBAIScUz0bVN73xpy273gcAwHjb3qI0fXmuYNaNfdyYJG';
 
-const COLORS = { win: '#00c853', loss: '#b00020', guesses: '#2196f3', time: '#ff9800' };
+const COLORS = { win: '#00c853', loss: '#e53935', guesses: '#2196f3', time: '#ff9800' };
+
+// Text, grid and slice-border colours from the current theme.
+const themeColors = () => {
+    const css = getComputedStyle(document.documentElement);
+    const v = (name) => css.getPropertyValue(name).trim();
+    return { text: v('--text-muted'), grid: v('--border'), surface: v('--surface') };
+};
 
 let chartJsPromise = null;
 const loadChartJs = () => {
@@ -53,6 +60,9 @@ const renderSummary = (summary) => {
 
 const renderCharts = (Chart, summary) => {
     destroyCharts();
+    const theme = themeColors();
+    Chart.defaults.color = theme.text;
+    Chart.defaults.borderColor = theme.grid;
     const dates = summary.sorted.map(e => e.date);
     const animation = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? false : undefined;
 
@@ -63,7 +73,7 @@ const renderCharts = (Chart, summary) => {
             datasets: [{
                 data: [summary.wins, summary.losses],
                 backgroundColor: [COLORS.win, COLORS.loss],
-                borderColor: ['#fff', '#fff'],
+                borderColor: [theme.surface, theme.surface],
                 borderWidth: 2
             }]
         },
@@ -81,7 +91,8 @@ const renderCharts = (Chart, summary) => {
         { min: 0 }));
 };
 
-export const setupStatsDialog = (storage) => {
+// `getToday()` returns today's puzzle date, used for the streak.
+export const setupStatsDialog = (storage, getToday) => {
     const dialog = document.getElementById('stats-modal');
     const openButton = document.getElementById('stats-button');
     const closeButton = document.getElementById('stats-close');
@@ -89,7 +100,7 @@ export const setupStatsDialog = (storage) => {
     const chartArea = document.getElementById('stats-charts');
 
     const open = async () => {
-        const summary = summarizeStats(readStats(storage));
+        const summary = summarizeStats(readStats(storage), getToday());
         renderSummary(summary);
         dialog.showModal();
         closeButton.focus();

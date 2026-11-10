@@ -27,38 +27,53 @@ export const lineCandidates = (fixed, rule) => {
     return out;
 };
 
-// Count solutions, stopping once `limit` is reached.
-export const countSolutions = (displayGrid, rowRules, colRules, limit = 2) => {
+// Count solutions, stopping once `limit` is reached. If `stats` is given,
+// stats.nodes is set to the number of partial grids the search tried, a
+// rough measure of how much searching (deduction) the puzzle takes.
+export const countSolutions = (displayGrid, rowRules, colRules, limit = 2, stats = null) => {
+    if (stats) stats.nodes = 0;
     const size = displayGrid.length;
     const rowCands = displayGrid.map((row, r) => lineCandidates(row, rowRules[r]));
     if (rowCands.some(c => c.length === 0)) return 0;
 
-    // For each column, the valid prefixes of every length, so partial grids
-    // can be pruned as soon as a column goes wrong.
+    // For each column, the valid prefixes of every length (as numbers, e.g.
+    // 3,7 -> 37), so partial grids are pruned as soon as a column goes wrong.
     const colPrefixes = [];
     for (let c = 0; c < size; c++) {
         const cands = lineCandidates(displayGrid.map(row => row[c]), colRules[c]);
         if (cands.length === 0) return 0;
         const prefixes = Array.from({ length: size + 1 }, () => new Set());
         for (const cand of cands) {
-            for (let k = 1; k <= size; k++) prefixes[k].add(cand.slice(0, k).join(','));
+            let code = 0;
+            for (let k = 1; k <= size; k++) {
+                code = code * 10 + cand[k - 1];
+                prefixes[k].add(code);
+            }
         }
         colPrefixes.push(prefixes);
     }
 
-    const chosen = [];
     let count = 0;
+    // codes[r][c]: column c's prefix code after rows 0..r-1 are placed.
+    const codes = Array.from({ length: size + 1 }, () => new Array(size).fill(0));
     const walk = (r) => {
         if (r === size) {
             count++;
             return;
         }
+        const before = codes[r];
+        const after = codes[r + 1];
+        const allowed = colPrefixes.map(p => p[r + 1]);
         for (const cand of rowCands[r]) {
-            chosen[r] = cand;
+            if (stats) stats.nodes++;
             let ok = true;
-            for (let c = 0; c < size && ok; c++) {
-                const prefix = chosen.slice(0, r + 1).map(row => row[c]).join(',');
-                ok = colPrefixes[c][r + 1].has(prefix);
+            for (let c = 0; c < size; c++) {
+                const code = before[c] * 10 + cand[c];
+                if (!allowed[c].has(code)) {
+                    ok = false;
+                    break;
+                }
+                after[c] = code;
             }
             if (ok) walk(r + 1);
             if (count >= limit) return;

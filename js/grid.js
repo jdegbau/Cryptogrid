@@ -104,22 +104,49 @@ export const renderGrid = (displayGrid, { createInput, setupCell }) => {
     addColumnLabels();
 };
 
+// IDs of the clue text cells, used for highlighting and as each input's
+// description (so screen readers read a cell's two clues).
+export const clueId = (kind, index) => `clue-${kind}-${index}`;
+
 export const renderClues = (rowRules, colRules) => {
-    const fill = (tbodyId, rules, name) => {
+    const fill = (tbodyId, kind, rules, name) => {
         const tbody = document.getElementById(tbodyId);
         tbody.innerHTML = '';
         rules.forEach((rule, i) => {
             const tr = document.createElement('tr');
-            const labelCell = document.createElement('td');
+            tr.dataset.clue = `${kind}-${i}`;
+            const labelCell = document.createElement('th');
+            labelCell.scope = 'row';
             labelCell.textContent = name(i);
             const clueCell = document.createElement('td');
+            clueCell.id = clueId(kind, i);
             clueCell.textContent = describeRule(rule);
             tr.append(labelCell, clueCell);
             tbody.appendChild(tr);
         });
     };
-    fill('row-clues', rowRules, i => `Row ${i + 1}`);
-    fill('col-clues', colRules, i => `Column ${COLUMN_LETTERS[i]}`);
+    fill('row-clues', 'row', rowRules, i => `Row ${i + 1}`);
+    fill('col-clues', 'col', colRules, i => `Column ${COLUMN_LETTERS[i]}`);
+};
+
+// Highlight the row and column clues for a cell, and show them in the strip
+// under the grid (small screens). Pass null to clear the highlight.
+export const highlightClues = (row, col) => {
+    document.querySelectorAll('tr.clue-active').forEach(tr => tr.classList.remove('clue-active'));
+    if (row === null) return;
+    document.querySelector(`tr[data-clue="row-${row}"]`)?.classList.add('clue-active');
+    document.querySelector(`tr[data-clue="col-${col}"]`)?.classList.add('clue-active');
+
+    const strip = document.getElementById('active-clues');
+    const line = (label, id) => {
+        const p = document.createElement('div');
+        const strong = document.createElement('strong');
+        strong.textContent = `${label}: `;
+        p.append(strong, document.getElementById(id)?.textContent || '');
+        return p;
+    };
+    strip.textContent = '';
+    strip.append(line(`Row ${row + 1}`, clueId('row', row)), line(`Column ${COLUMN_LETTERS[col]}`, clueId('col', col)));
 };
 
 // The grid as numbers: input values for open cells, text for locked ones.

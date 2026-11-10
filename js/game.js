@@ -1,10 +1,10 @@
 // Entry point: game state, the submit/check flow, timer, saving and sharing.
-import { getPuzzleDate, getPuzzleID, formatTime } from './date.js';
+import { getPuzzleDate, getPuzzleID, formatTime, msUntilNextPuzzle, formatCountdown } from './date.js';
 import { getAnswerGrid } from './encoding.js';
 import { readGameState, writeGameState, clearGameState, recordResult } from './storage.js';
 import {
     cellKey, editableInputs, renderGrid, renderClues, readUserSolution, readCellStates,
-    isSolved, markGuesses, revealAnswers, restoreCells, gridEmojis
+    isSolved, markGuesses, revealAnswers, restoreCells, gridEmojis, highlightClues
 } from './grid.js';
 import { createCellInput, attachGuessPopover, installPopoverDismiss } from './input.js';
 import {
@@ -27,25 +27,51 @@ const state = {
     puzzle: null,       // as stored in grids.json (answer encoded)
     answerGrid: null,   // decoded, kept in memory only
     guessesLeft: TOTAL_GUESSES,
-    timeSpent: 0,
     guessHistory: {},
-    timer: null
+    focusedCell: null   // [row, col] of the input with focus
 };
 
 const $ = (id) => document.getElementById(id);
 const guessesFor = (row, col) => state.guessHistory[cellKey(row, col)] || [];
 
-// --- Timer ---
+// --- Clock ---
+// Time is worked out from timestamps rather than counted by setInterval,
+// which browsers slow down in background tabs. It only runs while the page
+// is visible, so time spent in another tab or app doesn't count.
 
-const showTime = () => { $('timer').textContent = `Time: ${formatTime(state.timeSpent)}`; };
-const stopTimer = () => clearInterval(state.timer);
-const startTimer = () => {
-    stopTimer();
+const clock = { bankedMs: 0, since: null, running: false, tick: null };
+
+const elapsedSeconds = () =>
+    Math.floor((clock.bankedMs + (clock.since !== null ? Date.now() - clock.since : 0)) / 1000);
+
+const showTime = () => { $('timer').textContent = `Time: ${formatTime(elapsedSeconds())}`; };
+
+const pauseClock = () => {
+    if (clock.since !== null) {
+        clock.bankedMs += Date.now() - clock.since;
+        clock.since = null;
+    }
+};
+
+const resumeClock = () => {
+    if (clock.running && clock.since === null && !document.hidden) clock.since = Date.now();
+};
+
+const startTimer = (fromSeconds = 0) => {
+    clearInterval(clock.tick);
+    clock.bankedMs = fromSeconds * 1000;
+    clock.since = null;
+    clock.running = true;
+    resumeClock();
     showTime();
-    state.timer = setInterval(() => {
-        state.timeSpent++;
-        showTime();
-    }, 1000);
+    clock.tick = setInterval(showTime, 250);
+};
+
+const stopTimer = () => {
+    pauseClock();
+    clock.running = false;
+    clearInterval(clock.tick);
+    showTime();
 };
 
 // --- Saving ---
@@ -56,7 +82,7 @@ const saveGame = () => {
     if (!state.puzzle) return;
     writeGameState(storage, {
         guessesLeft: state.guessesLeft,
-        timeSpent: state.timeSpent,
+        timeSpent: elapsedSeconds(),
         guessHistory: state.guessHistory,
         currentPuzzle: state.puzzle,
         userSolution: readUserSolution(),
@@ -67,20 +93,71 @@ const saveGame = () => {
     });
 };
 
+// --- Countdown to the next puzzle ---
+
+let countdownTimer = null;
+const stopCountdown = () => {
+    clearInterval(countdownTimer);
+    $('countdown').hidden = true;
+};
+
+const startCountdown = () => {
+    const el = $('countdown');
+    el.hidden = false;
+    const update = () => {
+        const ms = msUntilNextPuzzle();
+        if (ms <= 1000 || getPuzzleDate() !== state.puzzleDate) {
+            clearInterval(countdownTimer);
+            el.textContent = '';
+            const button = document.createElement('button');
+            button.className = 'button';
+            button.textContent = "Play today's puzzle";
+            button.addEventListener('click', () => window.location.reload());
+            el.appendChild(button);
+            return;
+        }
+        el.textContent = 'Next puzzle in ';
+        const time = document.createElement('strong');
+        time.textContent = formatCountdown(ms);
+        el.appendChild(time);
+    };
+    clearInterval(countdownTimer);
+    update();
+    countdownTimer = setInterval(update, 1000);
+};
+
 // --- Drawing ---
 
 const makeInput = (row, col) => createCellInput(row, col, { getGuesses: () => guessesFor(row, col) });
 
+// Clue highlight follows the focused cell; hovering a cell previews its clues.
+const setupClueHighlight = (cellDiv, row, col) => {
+    cellDiv.addEventListener('focusin', () => {
+        state.focusedCell = [row, col];
+        highlightClues(row, col);
+    });
+    cellDiv.addEventListener('mouseenter', () => highlightClues(row, col));
+    cellDiv.addEventListener('mouseleave', () => {
+        if (state.focusedCell) highlightClues(...state.focusedCell);
+        else highlightClues(null);
+    });
+};
+
 const drawPuzzle = () => {
+    renderClues(state.puzzle.rowRules, state.puzzle.colRules);
     renderGrid(state.puzzle.displayGrid, {
         createInput: makeInput,
-        setupCell: (cellDiv, popover, row, col) => attachGuessPopover(cellDiv, popover, {
-            getGuesses: () => guessesFor(row, col),
-            getAnswer: () => state.answerGrid[row][col]
-        })
+        setupCell: (cellDiv, popover, row, col) => {
+            attachGuessPopover(cellDiv, popover, {
+                getGuesses: () => guessesFor(row, col),
+                getAnswer: () => state.answerGrid[row][col]
+            });
+            setupClueHighlight(cellDiv, row, col);
+        }
     });
-    renderClues(state.puzzle.rowRules, state.puzzle.colRules);
     updateGuessIcons(state.guessesLeft, TOTAL_GUESSES);
+    const level = state.puzzle.difficulty ? ` · ${state.puzzle.difficulty}` : '';
+    $('puzzle-info').textContent = `Puzzle #${state.puzzleID}${level}`;
 };
 
 // --- End of game ---
@@ -106,7 +183,6 @@ const shareScore = async (text) => {
 // final state without replaying the effects or recording stats again.
 const endGame = (won, { restoring = false } = {}) => {
     stopTimer();
-    showTime();
     $('check-button').hidden = true;
     const shareButton = $('share-button');
     shareButton.hidden = false;
@@ -114,17 +190,20 @@ const endGame = (won, { restoring = false } = {}) => {
 
     setEndResult(won ? WIN_MESSAGE : LOSE_MESSAGE, won ? '🎉' : '❌', restoring ? null : (won ? 'win' : 'lose'));
     editableInputs().forEach(input => { input.disabled = true; });
+    startCountdown();
 
     const guessesUsed = TOTAL_GUESSES - state.guessesLeft;
+    const timeSpent = elapsedSeconds();
     if (!restoring) {
         if (won) playWinEffect(); else playLoseEffect();
-        recordResult(storage, { date: state.puzzleDate, win: won, guessesUsed, timeSpent: state.timeSpent });
+        recordResult(storage, { date: state.puzzleDate, win: won, guessesUsed, timeSpent });
     }
 
     const numberEmojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣'];
     const guessStatus = numberEmojis.map((emoji, i) => (i < guessesUsed ? '❌' : emoji)).join('');
+    const level = state.puzzle.difficulty ? ` (${state.puzzle.difficulty})` : '';
     const url = window.location.origin + window.location.pathname;
-    const shareText = `Pseudoku — #${state.puzzleID}\n\n${gridEmojis(state.answerGrid)}\nGuesses: ${guessStatus}\nTime: ${formatTime(state.timeSpent)}\nPlay: ${url}`;
+    const shareText = `Pseudoku — #${state.puzzleID}${level}\n\n${gridEmojis(state.answerGrid)}\nGuesses: ${guessStatus}\nTime: ${formatTime(timeSpent)}\nPlay: ${url}`;
     shareButton.onclick = () => shareScore(shareText);
 };
 
@@ -183,23 +262,25 @@ const checkSolution = () => {
 const startPuzzle = (puzzle) => {
     state.puzzle = puzzle;
     state.answerGrid = getAnswerGrid(puzzle);
+    state.focusedCell = null;
 };
 
 const resumeOrStart = () => {
     stopTimer();
+    stopCountdown();
     const saved = readGameState(storage, { puzzleID: state.puzzleID, puzzleDate: state.puzzleDate });
     if (saved) {
         startPuzzle(saved.currentPuzzle);
         state.guessesLeft = saved.guessesLeft;
-        state.timeSpent = saved.timeSpent;
         state.guessHistory = saved.guessHistory || {};
+        clock.bankedMs = (saved.timeSpent || 0) * 1000;
         drawPuzzle();
         restoreCells(saved.userSolution, saved.cellStates, state.answerGrid, makeInput);
         if (saved.gameOver) {
             endGame(state.guessesLeft > 0, { restoring: true });
         } else {
             setResultMessage(`You have ${state.guessesLeft} guesses left.`);
-            startTimer();
+            startTimer(saved.timeSpent || 0);
         }
         return;
     }
@@ -212,11 +293,10 @@ const resumeOrStart = () => {
     }
     startPuzzle(puzzle);
     state.guessesLeft = TOTAL_GUESSES;
-    state.timeSpent = 0;
     state.guessHistory = {};
     drawPuzzle();
     setResultMessage(`You have ${state.guessesLeft} guesses left.`);
-    startTimer();
+    startTimer(0);
 };
 
 // Admin override: clear all saved data and start today's puzzle afresh.
@@ -230,9 +310,22 @@ window.__PSEUDOKU_ADMIN_RESET = () => {
 
 const init = async () => {
     setupTabs();
-    setupStatsDialog(storage);
+    setupStatsDialog(storage, () => state.puzzleDate || getPuzzleDate());
     installPopoverDismiss();
     $('check-button').addEventListener('click', checkSolution);
+
+    // Pause the clock and save when the page is hidden (switching tabs or
+    // apps); on phones that's often the last chance before it is closed.
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            pauseClock();
+            saveGame();
+        } else {
+            resumeClock();
+            showTime();
+        }
+    });
+    window.addEventListener('pagehide', saveGame);
     window.addEventListener('beforeunload', saveGame);
 
     try {

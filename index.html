@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <title>Pseudoku Cryprogrid Game</title>
+  <meta name="color-scheme" content="light dark">
+  <title>Pseudoku — Daily Logic Puzzle</title>
   <!-- Open Graph Meta Tags -->
   <meta property="og:title" content="Pseudoku — Daily Logic Puzzle">
   <meta property="og:description" content="Fill the grid using logic and clues. Can you solve today's Pseudoku?">
@@ -27,6 +28,7 @@
   <div class="container">
     <header class="header">
       <h1 class="title">Pseudoku</h1>
+      <div class="puzzle-info" id="puzzle-info"></div>
       <div class="status">
         <div class="timer" id="timer">Time: 0:00</div>
         <div class="errors" id="errors">Guesses Remaining: </div>
@@ -35,30 +37,36 @@
     <main class="main">
             <section class="clues-section" id="clues-container">
                 <div class="tabs" role="tablist">
-                    <button class="tab-button active" id="clues-tab" role="tab" aria-selected="true" aria-controls="clues-table">Clues</button>
+                    <button class="tab-button active" id="clues-tab" role="tab" aria-selected="true" aria-controls="clues-panel">Clues</button>
                     <button class="tab-button" id="rules-tab" role="tab" aria-selected="false" aria-controls="game-rules-container">How to Play</button>
                 </div>
                 <div class="content">
-                    <table class="clues-table" id="clues-table" role="tabpanel" aria-labelledby="clues-tab">
-                        <thead>
-                            <tr>
-                                <th>Row</th>
-                                <th>Clue</th>
-                            </tr>
-                        </thead>
-                        <tbody id="row-clues">
-                            <!-- Row clues will be inserted here -->
-                        </tbody>
-                        <thead>
-                            <tr>
-                                <th>Column</th>
-                                <th>Clue</th>
-                            </tr>
-                        </thead>
-                        <tbody id="col-clues">
-                            <!-- Column clues will be inserted here -->
-                        </tbody>
-                    </table>
+                    <div id="clues-panel" role="tabpanel" aria-labelledby="clues-tab">
+                        <table class="clues-table">
+                            <caption class="sr-only">Row clues</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Row</th>
+                                    <th scope="col">Clue</th>
+                                </tr>
+                            </thead>
+                            <tbody id="row-clues">
+                                <!-- Row clues will be inserted here -->
+                            </tbody>
+                        </table>
+                        <table class="clues-table">
+                            <caption class="sr-only">Column clues</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Column</th>
+                                    <th scope="col">Clue</th>
+                                </tr>
+                            </thead>
+                            <tbody id="col-clues">
+                                <!-- Column clues will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
                     <section class="game-rules-section" id="game-rules-container" role="tabpanel" aria-labelledby="rules-tab" hidden>
                         <div class="rules-content">
                             <p>Fill in the grid with numbers 1 to 9.</p>
@@ -82,6 +90,7 @@
                                 <span aria-hidden="true">🟨 ≈</span>
                                 <span>Number is within 2 of the correct number</span>
                             </div>
+                            <p class="difficulty-note">Puzzles get harder through the week: Monday is the easiest and Sunday the hardest.</p>
                         </div>
                     </section>
                 </div>
@@ -90,11 +99,14 @@
                 <div id="grid-cells" class="grid-cells" role="group" aria-label="Puzzle grid">
                     <!-- Labels and cells will be inserted here -->
                 </div>
+                <!-- Screen readers get these clues from each input's description -->
+                <p class="active-clues" id="active-clues" aria-hidden="true">Tap a cell to see its clues here.</p>
                 <section class="controls-section">
                     <button class="button check-btn" id="check-button">Submit Guess</button>
                     <button class="button share-btn" id="share-button" hidden>Share Your Score</button>
                     <button class="button stats-btn" id="stats-button" aria-haspopup="dialog">📊 Stats</button>
                     <p class="result" id="result" aria-live="polite"></p>
+                    <p class="countdown" id="countdown" hidden></p>
                 </section>
             </section>
         </main>

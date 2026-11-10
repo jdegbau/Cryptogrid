@@ -1,5 +1,6 @@
 // Saved game and stats history. Every function takes the storage object
 // (localStorage in the browser) so it can be tested with a stand-in.
+import { daysBetween } from './date.js';
 
 export const GAME_KEY = 'pseudokuGameState';
 export const STATS_KEY = 'pseudokuStatsHistory';
@@ -52,11 +53,25 @@ export const recordResult = (storage, entry) => {
 
 const average = (values) => values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
 
-export const summarizeStats = (history) => {
+// Wins on consecutive days, ending today or yesterday. A missed day or a
+// loss ends it. Not having played today yet doesn't break it.
+export const currentStreak = (sorted, today) => {
+    if (sorted.length === 0) return 0;
+    const last = sorted[sorted.length - 1];
+    if (today && daysBetween(last.date, today) > 1) return 0;
+    let streak = 0;
+    for (let i = sorted.length - 1; i >= 0; i--) {
+        if (!sorted[i].win) break;
+        if (i < sorted.length - 1 && daysBetween(sorted[i].date, sorted[i + 1].date) !== 1) break;
+        streak++;
+    }
+    return streak;
+};
+
+export const summarizeStats = (history, today = null) => {
     const sorted = history.slice().sort((a, b) => a.date.localeCompare(b.date));
     const wins = sorted.filter(e => e.win).length;
-    let streak = 0;
-    for (let i = sorted.length - 1; i >= 0 && sorted[i].win; i--) streak++;
+    const streak = currentStreak(sorted, today);
     return {
         sorted,
         played: sorted.length,

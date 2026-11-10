@@ -5,9 +5,12 @@ import { readFileSync } from 'node:fs';
 import { checkRule, describeRule, ruleChecks } from '../js/rules.js';
 import { countSolutions } from '../js/solver.js';
 import { encodeAnswer, decodeAnswer, getAnswerGrid } from '../js/encoding.js';
-import { getPuzzleDate, getPuzzleDayIndex, getPuzzleID, formatTime } from '../js/date.js';
 import {
-    readGameState, writeGameState, clearGameState, readStats, recordResult, summarizeStats, GAME_KEY
+    getPuzzleDate, getPuzzleDayIndex, getPuzzleID, formatTime, msUntilNextPuzzle, formatCountdown,
+    daysBetween, weekdayForPuzzleID
+} from '../js/date.js';
+import {
+    readGameState, writeGameState, clearGameState, readStats, recordResult, summarizeStats, currentStreak, GAME_KEY
 } from '../js/storage.js';
 import { verifyPuzzles } from '../gridGenerator.js';
 
@@ -64,7 +67,7 @@ test('encoding: round-trips and hides the digits', () => {
 });
 
 test('grids.json: every puzzle has exactly one solution and no plain answers', () => {
-    assert.equal(puzzles.length, 150);
+    assert.equal(puzzles.length % 7, 0, 'a multiple of 7 keeps puzzles on their weekday');
     assert.ok(puzzles.every(p => !('answerGrid' in p) && typeof p.answer === 'string'));
     assert.deepEqual(puzzles.map(p => p.id), puzzles.map((_, i) => i + 1));
     assert.ok(verifyPuzzles(puzzles, () => {}));
@@ -80,6 +83,41 @@ test('date: puzzle day follows the Chicago calendar', () => {
         ['2026-03-07T17:00:00Z', '2026-03-08T17:00:00Z'], ['2026-03-08T17:00:00Z', '2026-03-09T17:00:00Z']]) {
         assert.equal(getPuzzleDayIndex(new Date(b)) - getPuzzleDayIndex(new Date(a)), 1, `${a} -> ${b}`);
     }
+});
+
+test('grids.json: 7-8 blanks each, difficulty rises through the week', () => {
+    const levels = ['Easy', 'Easy', 'Medium', 'Medium', 'Hard', 'Hard', 'Expert'];
+    for (const p of puzzles) {
+        const blanks = p.displayGrid.flat().filter(v => v === null).length;
+        assert.ok(blanks === 7 || blanks === 8, `puzzle ${p.id} has ${blanks} blanks`);
+        assert.equal(p.difficulty, levels[weekdayForPuzzleID(p.id)], `puzzle ${p.id}`);
+    }
+});
+
+test('date: weekday of a puzzle ID', () => {
+    assert.equal(weekdayForPuzzleID(1), 1); // 21 May 2024 was a Tuesday (Monday = 0)
+    assert.equal(weekdayForPuzzleID(7), 0);
+    // With 154 puzzles, the ID on a given date always falls on that date's weekday
+    for (const iso of ['2025-03-03T18:00:00Z', '2026-11-15T18:00:00Z', '2027-06-20T18:00:00Z']) {
+        const d = new Date(iso);
+        assert.equal(weekdayForPuzzleID(getPuzzleID(154, d)), (d.getUTCDay() + 6) % 7, iso);
+    }
+});
+
+test('date: countdown to the next puzzle', () => {
+    // 22:00 CST -> 2 hours
+    assert.equal(msUntilNextPuzzle(new Date('2026-11-10T04:00:00Z')), 2 * 3600e3);
+    // 23:59:30.250 CST -> 29.75 s
+    assert.equal(msUntilNextPuzzle(new Date('2026-11-10T05:59:30.250Z')), 29750);
+    // DST ends 1 Nov 2026 (25-hour day): from 00:30 CDT it is 24.5 hours to midnight
+    assert.equal(msUntilNextPuzzle(new Date('2026-11-01T05:30:00Z')), 24.5 * 3600e3);
+    // DST starts 8 Mar 2026 (23-hour day): from 00:30 CST it is 22.5 hours
+    assert.equal(msUntilNextPuzzle(new Date('2026-03-08T06:30:00Z')), 22.5 * 3600e3);
+    // The day before DST ends: 22:00 CDT -> 2 hours
+    assert.equal(msUntilNextPuzzle(new Date('2026-10-31T03:00:00Z')), 2 * 3600e3);
+    assert.equal(formatCountdown(2 * 3600e3 + 5 * 60e3 + 9e3), '2h 05m 09s');
+    assert.equal(formatCountdown(29750), '0m 30s');
+    assert.equal(daysBetween('2026-02-28', '2026-03-01'), 1);
 });
 
 test('date: puzzle IDs use the whole list and wrap', () => {
@@ -117,4 +155,15 @@ test('storage: stats replace the entry for the same day and summarise', () => {
     assert.equal(summary.avgGuesses, 3.5);
     assert.equal(summary.avgTime, 80);
     assert.deepEqual(summarizeStats([]).played, 0);
+});
+
+test('storage: streak needs consecutive days', () => {
+    const e = (date, win = true) => ({ date, win, guessesUsed: 1, timeSpent: 10 });
+    assert.equal(currentStreak([e('2026-11-08'), e('2026-11-09'), e('2026-11-10')], '2026-11-10'), 3);
+    assert.equal(currentStreak([e('2026-11-08'), e('2026-11-09')], '2026-11-10'), 2, "today not played yet: still alive");
+    assert.equal(currentStreak([e('2026-11-07'), e('2026-11-08')], '2026-11-10'), 0, 'missed yesterday');
+    assert.equal(currentStreak([e('2026-11-06'), e('2026-11-08'), e('2026-11-09')], '2026-11-10'), 2, 'gap ends it');
+    assert.equal(currentStreak([e('2026-11-08'), e('2026-11-09', false), e('2026-11-10')], '2026-11-10'), 1, 'loss ends it');
+    assert.equal(currentStreak([e('2026-11-10', false)], '2026-11-10'), 0);
+    assert.equal(currentStreak([], '2026-11-10'), 0);
 });
