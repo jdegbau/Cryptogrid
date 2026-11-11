@@ -369,11 +369,18 @@ svg .fill {
    Clues for the selected cell
    ========================================================================== */
 .active-clues {
+    /* A fixed height that fits both clues at two lines each, so the grid
+       below never moves when a different cell (or no cell) is selected. */
+    --clue-size: 0.95rem;
+    --clue-pad: 5px;
+    --strip-pad: 6px;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    min-height: 76px;
-    padding: 6px 14px;
+    flex: none;
+    height: calc(4 * 1.3 * var(--clue-size) + 4 * var(--clue-pad) + 2 * var(--strip-pad) + 1px);
+    overflow: hidden;
+    padding: var(--strip-pad) 14px;
     border-radius: var(--radius);
     background: var(--surface);
     box-shadow: var(--shadow-sm);
@@ -383,9 +390,22 @@ svg .fill {
     display: flex;
     align-items: baseline;
     gap: 10px;
-    padding: 5px 0;
-    font-size: 0.95rem;
+    padding: var(--clue-pad) 0;
+    font-size: var(--clue-size);
     line-height: 1.3;
+}
+
+.active-clue-text {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+}
+
+/* After the game ends: keep the space so the grid doesn't jump */
+.active-clues.concealed {
+    visibility: hidden;
 }
 
 .active-clue + .active-clue {
@@ -428,10 +448,12 @@ svg .fill {
 
 .grid-cells {
     /* As big as the width allows, but small enough on short phones that
-       the grid, number pad and submit button fit on one screen. */
-    --chrome: 440px;
+       the grid, number pad and submit button fit on one screen. Uses the
+       small viewport height (svh) so the grid keeps its size when the
+       mobile browser bar shows or hides. */
+    --chrome: 476px;
     --cell: clamp(48px, min(calc((100vw - 86px) / 4), calc((100vh - var(--chrome)) / 4)), 92px);
-    --cell: clamp(48px, min(calc((100vw - 86px) / 4), calc((100dvh - var(--chrome)) / 4)), 92px);
+    --cell: clamp(48px, min(calc((100vw - 86px) / 4), calc((100svh - var(--chrome)) / 4)), 92px);
     display: grid;
     grid-template-columns: 22px repeat(4, var(--cell));
     grid-template-rows: 22px repeat(4, var(--cell));
@@ -1252,17 +1274,16 @@ svg .fill {
 @media (max-height: 760px) and (max-width: 600px) {
     .layout { padding-top: 8px; }
     .play { gap: 10px; }
-    .grid-cells { gap: 6px; --chrome: 400px; }
+    .grid-cells { gap: 6px; --chrome: 432px; }
     .key { height: 46px; }
     .keypad { gap: 6px; margin-top: 0; }
     .button { min-height: 48px; }
     .controls { margin-top: 0; }
-    .active-clues { min-height: 66px; padding: 4px 12px; }
-    .active-clue { font-size: 0.88rem; padding: 4px 0; }
+    .active-clues { --clue-size: 0.88rem; --clue-pad: 4px; --strip-pad: 4px; padding-inline: 12px; }
 }
 
 @media (max-height: 600px) and (max-width: 600px) {
-    .grid-cells { --chrome: 348px; }
+    .grid-cells { --chrome: 380px; }
     .app-bar-inner { height: 48px; }
     .keypad { grid-template-columns: repeat(10, 1fr); gap: 4px; }
     .key { height: 44px; font-size: 1.2rem; }

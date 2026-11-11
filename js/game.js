@@ -196,7 +196,7 @@ const drawPuzzle = () => {
         info.append(chip);
     }
     $('keypad').hidden = false;
-    $('active-clues').hidden = false;
+    $('active-clues').classList.remove('concealed');
     highlightClues(null);
 };
 
@@ -231,7 +231,7 @@ const endGame = (won, { restoring = false } = {}) => {
     setEndResult(won ? WIN_MESSAGE : LOSE_MESSAGE, won ? '🎉' : '❌', restoring ? null : (won ? 'win' : 'lose'));
     editableInputs().forEach(input => { input.disabled = true; });
     $('keypad').hidden = true;
-    $('active-clues').hidden = true;
+    $('active-clues').classList.add('concealed');
     highlightClues(null);
     state.focusedCell = null;
     if (document.activeElement && document.activeElement.closest?.('.grid-cell')) shareButton.focus({ preventScroll: true });
