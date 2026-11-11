@@ -239,8 +239,14 @@ html {
 
 body {
     margin: 0;
+    /* The game fills exactly one screen: the layout below stretches to the
+       bottom and the grid takes whatever height is left over. Uses the
+       small viewport height (svh) so the grid keeps its size when the
+       mobile browser bar shows or hides. */
+    display: flex;
+    flex-direction: column;
     min-height: 100vh;
-    min-height: 100dvh;
+    min-height: 100svh;
     font-family: var(--font);
     font-size: 16px;
     line-height: 1.45;
@@ -365,14 +371,17 @@ svg .fill {
    Layout
    ========================================================================== */
 .layout {
+    box-sizing: border-box;
+    flex: 1 1 0;
+    display: flex;
+    width: 100%;
     max-width: 1040px;
     margin: 0 auto;
-    padding: 12px max(16px, env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
-    display: grid;
-    gap: 20px;
+    padding: 12px max(16px, env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
 }
 
 .play {
+    flex: 1 1 auto;
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -382,12 +391,20 @@ svg .fill {
     margin: 0 auto;
 }
 
+/* Phones and tablets: the full clue list opens as a sheet from the app bar
+   instead of sitting below the game, so nothing needs scrolling. */
+.clues-panel {
+    display: none;
+}
+
 @media (min-width: 860px) {
     .layout {
+        display: grid;
         grid-template-columns: minmax(0, 460px) minmax(0, 1fr);
-        align-items: start;
+        align-items: stretch;
         gap: 32px;
-        padding-top: 28px;
+        padding-top: 24px;
+        padding-bottom: 24px;
     }
 
     .play {
@@ -395,8 +412,16 @@ svg .fill {
     }
 
     .clues-panel {
-        position: sticky;
-        top: 84px;
+        display: block;
+        align-self: start;
+        box-sizing: border-box;
+        /* Never taller than the screen: scrolls inside itself instead */
+        max-height: calc(100svh - 56px - 48px - env(safe-area-inset-top));
+        overflow: auto;
+    }
+
+    #clues-button {
+        display: none;
     }
 }
 
@@ -543,8 +568,14 @@ svg .fill {
    Grid
    ========================================================================== */
 .board {
+    /* Takes the height the rest of the game leaves free; the grid sizes
+       itself to fit inside (container query units below). */
+    flex: 1 1 0;
+    min-height: calc(22px + 4 * 8px + 4 * 40px);
     display: flex;
+    align-items: center;
     justify-content: center;
+    container-type: size;
 }
 
 .grid-cells {
@@ -555,10 +586,13 @@ svg .fill {
     --chrome: 476px;
     --cell: clamp(48px, min(calc((100vw - 86px) / 4), calc((100vh - var(--chrome)) / 4)), 92px);
     --cell: clamp(48px, min(calc((100vw - 86px) / 4), calc((100svh - var(--chrome)) / 4)), 92px);
+    /* Where container queries work: as big as the free space allows */
+    --cell: clamp(40px, min(calc((100cqw - 22px - 4 * var(--grid-gap)) / 4), calc((100cqh - 22px - 4 * var(--grid-gap)) / 4)), 92px);
+    --grid-gap: 8px;
     display: grid;
     grid-template-columns: 22px repeat(4, var(--cell));
     grid-template-rows: 22px repeat(4, var(--cell));
-    gap: 8px;
+    gap: var(--grid-gap);
 }
 
 .row-label,
@@ -1616,20 +1650,25 @@ svg .fill {
 }
 
 /* ==========================================================================
-   Short phones: tighten spacing so grid, pad and button fit
+   Short screens: tighten spacing so grid, pad and button fit
    ========================================================================== */
-@media (max-height: 760px) and (max-width: 600px) {
-    .layout { padding-top: 8px; }
+@media (max-height: 760px) {
+    .layout { padding-top: 8px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
     .play { gap: 10px; }
-    .grid-cells { gap: 6px; --chrome: 432px; }
+    .clues-panel { padding: 16px 18px; }
+    .panel-title { margin-bottom: 8px; }
+    .clue-groups { gap: 12px; }
+    .clue-list li { padding-block: 5px; }
+    .grid-cells { --grid-gap: 6px; --chrome: 432px; }
     .key { height: 46px; }
     .keypad { gap: 6px; margin-top: 0; }
     .button { min-height: 48px; }
-    .controls { margin-top: 0; }
+    .controls { margin-top: 0; gap: 2px; }
+    .result, .countdown { margin-top: 2px; font-size: 0.92rem; line-height: 1.35; }
     .active-clues { --clue-size: 0.88rem; --clue-pad: 4px; --strip-pad: 4px; padding-inline: 12px; }
 }
 
-@media (max-height: 600px) and (max-width: 600px) {
+@media (max-height: 600px) {
     .grid-cells { --chrome: 380px; }
     .app-bar-inner { height: 48px; }
     .keypad { grid-template-columns: repeat(10, 1fr); gap: 4px; }
