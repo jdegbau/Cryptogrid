@@ -163,6 +163,7 @@ export const highlightClues = (row, col, { cards = true } = {}) => {
         head.innerHTML = icon;
         head.append(label);
         const text = document.createElement('span');
+        text.className = 'active-clue-text';
         text.textContent = document.getElementById(id)?.textContent || '';
         div.append(head, text);
         return div;
