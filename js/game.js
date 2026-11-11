@@ -347,7 +347,9 @@ const resumeOrStart = () => {
 };
 
 // Admin override: clear all saved data and start today's puzzle afresh.
-window.__PSEUDOKU_ADMIN_RESET = () => {
+// Only on a local copy, so it isn't sitting in every player's console.
+const isLocal = ['localhost', '127.0.0.1', '[::1]', ''].includes(window.location.hostname);
+if (isLocal) window.__PSEUDOKU_ADMIN_RESET = () => {
     try { storage.clear(); } catch (e) { }
     $('check-button').hidden = false;
     $('share-button').hidden = true;

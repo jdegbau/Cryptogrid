@@ -42,7 +42,7 @@ export const buildStatsShare = (summary, { bestTime = null, url }) => {
         '',
         `Played: ${summary.played}`,
         `Win rate: ${Math.round(summary.winRate)}%`,
-        `Streak: ${streakText(summary.streak) || summary.streak}`
+        `Streak: ${streakText(summary.streak) || summary.streak} · Best: ${summary.bestStreak}`
     ];
     if (bestTime !== null) lines.push(`Best time: ${formatTime(Math.round(bestTime))}`);
     return { text: lines.join('\n'), url };
@@ -131,11 +131,15 @@ export const shareText = async (share, button) => {
             // Share sheet failed to open: fall through to copying.
         }
     }
-    const full = withLink(share);
-    if (await copyText(full)) {
+    await copyOrShow(withLink(share), button);
+};
+
+// Copy `text`, or show it to copy by hand if the browser won't.
+export const copyOrShow = async (text, button) => {
+    if (await copyText(text)) {
         flashLabel(button, 'Copied ✓');
         showToast('Copied to clipboard!');
     } else {
-        showCopyDialog(full, button);
+        showCopyDialog(text, button);
     }
 };

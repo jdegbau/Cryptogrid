@@ -10,7 +10,8 @@ import {
     daysBetween, weekdayForPuzzleID
 } from '../js/date.js';
 import {
-    readGameState, writeGameState, clearGameState, readStats, recordResult, summarizeStats, currentStreak, GAME_KEY, STATS_KEY, STATS_VERSION
+    readGameState, writeGameState, clearGameState, readStats, recordResult, summarizeStats, currentStreak, GAME_KEY, STATS_KEY, STATS_VERSION,
+    bestStreak, guessDistribution, dailySeries, encodeStatsBackup, decodeStatsBackup, mergeStats, importStatsBackup
 } from '../js/storage.js';
 import { verifyPuzzles } from '../gridGenerator.js';
 
@@ -208,5 +209,50 @@ test('share: stats text', async () => {
         { date: '2026-01-04', win: true, guessesUsed: 2, timeSpent: 120 }
     ], '2026-01-04');
     const { text } = buildStatsShare(summary, { bestTime: 61, url: 'u' });
-    assert.equal(text, 'My Pseudoku stats\n\nPlayed: 4\nWin rate: 75%\nStreak: 1\nBest time: 1:01');
+    assert.equal(text, 'My Pseudoku stats\n\nPlayed: 4\nWin rate: 75%\nStreak: 1 · Best: 2\nBest time: 1:01');
+});
+
+const game = (date, win = true, guessesUsed = 2, timeSpent = 60) => ({ date, win, guessesUsed, timeSpent, v: STATS_VERSION });
+
+test('stats: best streak survives a loss and needs consecutive days', () => {
+    assert.equal(bestStreak([]), 0);
+    assert.equal(bestStreak([
+        game('2026-01-01'), game('2026-01-02'), game('2026-01-03'),
+        game('2026-01-04', false),
+        game('2026-01-05'),
+        game('2026-01-07'), game('2026-01-08')
+    ]), 3);
+    assert.equal(summarizeStats([game('2026-01-01'), game('2026-01-02'), game('2026-01-03', false)], '2026-01-03').bestStreak, 2);
+});
+
+test('stats: guess distribution counts wins by guess and losses', () => {
+    const d = guessDistribution([game('2026-01-01', true, 1), game('2026-01-02', true, 3), game('2026-01-03', true, 3), game('2026-01-04', false, 5)]);
+    assert.deepEqual(d, { wins: [1, 0, 2, 0, 0], losses: 1 });
+});
+
+test('stats: daily series fills skipped days with null', () => {
+    const s = dailySeries([game('2026-02-27', true, 1, 10), game('2026-03-02', true, 1, 20)], 'timeSpent');
+    assert.deepEqual(s.dates, ['2026-02-27', '2026-02-28', '2026-03-01', '2026-03-02']);
+    assert.deepEqual(s.values, [10, null, null, 20]);
+    assert.deepEqual(dailySeries([], 'timeSpent'), { dates: [], values: [] });
+});
+
+test('backup: codes round-trip, reject junk and merge without overwriting', () => {
+    const history = [game('2026-01-01', true, 1, 30), game('2026-01-02', false, 5, 99)];
+    const code = encodeStatsBackup(history);
+    assert.deepEqual(decodeStatsBackup(code), history);
+    assert.deepEqual(decodeStatsBackup(`  ${code.slice(0, 20)}\n${code.slice(20)} `), history, 'whitespace from pasting is ignored');
+    assert.equal(decodeStatsBackup('hello'), null);
+    assert.equal(decodeStatsBackup('PSEUDOKU1:not-base64!!'), null);
+    assert.equal(decodeStatsBackup('PSEUDOKU1:' + btoa('[["2026-01-01",1,9,30]]')), null, 'guesses out of range');
+
+    const { history: merged, added } = mergeStats([game('2026-01-02', true, 2, 50)], history.concat(history));
+    assert.equal(added, 1, 'duplicates and days already played are skipped');
+    assert.equal(merged.find(e => e.date === '2026-01-02').win, true, 'local result kept');
+
+    const storage = new MemoryStorage();
+    recordResult(storage, game('2026-01-03'));
+    assert.deepEqual(importStatsBackup(storage, code), { added: 2, total: 3 });
+    assert.equal(importStatsBackup(storage, 'nope'), null);
+    assert.equal(readStats(storage).length, 3);
 });

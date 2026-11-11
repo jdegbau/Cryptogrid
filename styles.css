@@ -1104,14 +1104,16 @@ svg .fill {
 }
 
 /* Stats */
+/* Seven tiles: four streak/result tiles on top, three averages below. */
 .stats-summary {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(12, 1fr);
     gap: 8px;
     margin: 6px 0 12px;
 }
 
 .stat-tile {
+    grid-column: span 4;
     display: flex;
     flex-direction: column-reverse;
     align-items: center;
@@ -1120,6 +1122,10 @@ svg .fill {
     border-radius: var(--radius);
     background: var(--surface-2);
     text-align: center;
+}
+
+.stat-tile:nth-child(-n+4) {
+    grid-column: span 3;
 }
 
 .stat-tile dt {
@@ -1189,6 +1195,93 @@ svg .fill {
 
 .chart-title {
     margin-top: 16px;
+}
+
+/* Guess distribution */
+.distribution {
+    display: grid;
+    gap: 5px;
+    margin: 0 0 12px;
+    padding: 0;
+    list-style: none;
+}
+
+.distribution-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.distribution-label {
+    width: 1.2em;
+    font-weight: 600;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.distribution-bar {
+    box-sizing: border-box;
+    min-width: 2em;
+    width: var(--share);
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: var(--surface-2);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    transition: width 0.4s ease;
+}
+
+.distribution-row.today .distribution-bar {
+    background: var(--primary-bg);
+    color: var(--on-primary);
+}
+
+.distribution-row.today .distribution-label {
+    color: var(--text);
+}
+
+/* Moving stats between devices */
+.stats-backup {
+    margin-top: 18px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+}
+
+.stats-backup summary {
+    cursor: pointer;
+    font-weight: 600;
+    padding: 6px 0;
+}
+
+.stats-backup .muted {
+    font-size: 0.92rem;
+}
+
+.stats-backup label {
+    display: block;
+    margin: 14px 0 6px;
+    font-weight: 600;
+    font-size: 0.92rem;
+}
+
+.stats-backup .button {
+    width: 100%;
+}
+
+.stats-backup textarea {
+    margin-bottom: 10px;
+    word-break: break-all;
+}
+
+.stats-import-status {
+    margin: 8px 0 0;
+    font-size: 0.92rem;
+    text-align: center;
+}
+
+.stats-import-status:empty {
+    display: none;
 }
 
 /* ==========================================================================

@@ -64,4 +64,4 @@ node gridGenerator.js 154 > grids.json
 
 ## Admin
 
-Run `__PSEUDOKU_ADMIN_RESET()` in the browser console to clear all saved data and restart today's puzzle.
+On a local copy (`localhost`), run `__PSEUDOKU_ADMIN_RESET()` in the browser console to clear all saved data and restart today's puzzle. It isn't defined on the live site.

@@ -134,20 +134,29 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7.5 7.5 12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>
         <span class="button-label">Share your stats</span>
       </button>
+      <div id="stats-distribution-wrap" hidden>
+        <h3 class="chart-title">Guess distribution</h3>
+        <ol id="stats-distribution" class="distribution"></ol>
+      </div>
       <p id="stats-chart-status" class="stats-chart-status" aria-live="polite"></p>
       <div id="stats-charts" hidden>
         <div class="stats-chart stats-chart-pie">
           <canvas id="stats-win-chart" width="140" height="140" role="img" aria-label="Wins and losses"></canvas>
         </div>
-        <h3 class="chart-title">Guesses used</h3>
+        <h3 class="chart-title">Time per day (seconds)</h3>
         <div class="stats-chart">
-          <canvas id="stats-guess-chart" height="110" role="img" aria-label="Guesses used per game"></canvas>
-        </div>
-        <h3 class="chart-title">Time per game (seconds)</h3>
-        <div class="stats-chart">
-          <canvas id="stats-time-chart" height="110" role="img" aria-label="Time spent per game"></canvas>
+          <canvas id="stats-time-chart" height="110" role="img" aria-label="Time spent on each day's puzzle; gaps are days not played"></canvas>
         </div>
       </div>
+      <details class="stats-backup">
+        <summary>Move your stats to another device</summary>
+        <p class="muted">Your stats are saved in this browser only. Copy a backup code here, then paste it on your other device or browser. Games already saved there are kept.</p>
+        <button class="button" id="stats-export"><span class="button-label">Copy backup code</span></button>
+        <label for="stats-import-code">Paste a backup code</label>
+        <textarea id="stats-import-code" class="copy-text" rows="3" spellcheck="false" autocomplete="off"></textarea>
+        <button class="button" id="stats-import">Import stats</button>
+        <p id="stats-import-status" class="stats-import-status" aria-live="polite"></p>
+      </details>
     </div>
   </dialog>
 
