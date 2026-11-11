@@ -10,7 +10,8 @@ import {
     daysBetween, weekdayForPuzzleID
 } from '../js/date.js';
 import {
-    readGameState, writeGameState, clearGameState, readStats, recordResult, summarizeStats, currentStreak, GAME_KEY
+    readGameState, writeGameState, clearGameState, readStats, recordResult, summarizeStats, currentStreak, GAME_KEY, STATS_KEY, STATS_VERSION,
+    bestStreak, guessDistribution, dailySeries, encodeStatsBackup, decodeStatsBackup, mergeStats, importStatsBackup
 } from '../js/storage.js';
 import { verifyPuzzles } from '../gridGenerator.js';
 
@@ -142,9 +143,9 @@ test('storage: saved game only resumes for the same puzzle and day', () => {
 
 test('storage: stats replace the entry for the same day and summarise', () => {
     const storage = new MemoryStorage();
-    recordResult(storage, { date: '2026-11-09', win: false, guessesUsed: 5, timeSpent: 100 });
-    recordResult(storage, { date: '2026-11-10', win: true, guessesUsed: 1, timeSpent: 50 });
-    recordResult(storage, { date: '2026-11-10', win: true, guessesUsed: 2, timeSpent: 60 });
+    recordResult(storage, { date: '2026-11-09', win: false, guessesUsed: 5, timeSpent: 100, v: 2 });
+    recordResult(storage, { date: '2026-11-10', win: true, guessesUsed: 1, timeSpent: 50, v: 2 });
+    recordResult(storage, { date: '2026-11-10', win: true, guessesUsed: 2, timeSpent: 60, v: 2 });
     const history = readStats(storage);
     assert.equal(history.length, 2);
     const summary = summarizeStats(history);
@@ -157,6 +158,19 @@ test('storage: stats replace the entry for the same day and summarise', () => {
     assert.deepEqual(summarizeStats([]).played, 0);
 });
 
+test('storage: old wins are corrected to count the winning guess, once', () => {
+    const storage = new MemoryStorage();
+    storage.setItem(STATS_KEY, JSON.stringify([
+        { date: '2026-11-08', win: true, guessesUsed: 0, timeSpent: 30 },
+        { date: '2026-11-09', win: false, guessesUsed: 5, timeSpent: 100 }
+    ]));
+    assert.deepEqual(readStats(storage).map(e => e.guessesUsed), [1, 5]);
+    // Recording writes the corrected entries back; reading again leaves them alone.
+    recordResult(storage, { date: '2026-11-10', win: true, guessesUsed: 3, timeSpent: 40, v: STATS_VERSION });
+    assert.deepEqual(readStats(storage).map(e => e.guessesUsed), [1, 5, 3]);
+    assert.deepEqual(readStats(storage).map(e => e.guessesUsed), [1, 5, 3]);
+});
+
 test('storage: streak needs consecutive days', () => {
     const e = (date, win = true) => ({ date, win, guessesUsed: 1, timeSpent: 10 });
     assert.equal(currentStreak([e('2026-11-08'), e('2026-11-09'), e('2026-11-10')], '2026-11-10'), 3);
@@ -166,4 +180,105 @@ test('storage: streak needs consecutive days', () => {
     assert.equal(currentStreak([e('2026-11-08'), e('2026-11-09', false), e('2026-11-10')], '2026-11-10'), 1, 'loss ends it');
     assert.equal(currentStreak([e('2026-11-10', false)], '2026-11-10'), 0);
     assert.equal(currentStreak([], '2026-11-10'), 0);
+});
+
+test('share: guess line marks misses, the win and unused guesses', async () => {
+    const { guessLine } = await import('../js/share.js');
+    assert.equal(guessLine({ won: true, wrongGuesses: 0, total: 5 }), '✅⚪⚪⚪⚪ 1/5');
+    assert.equal(guessLine({ won: true, wrongGuesses: 2, total: 5 }), '❌❌✅⚪⚪ 3/5');
+    assert.equal(guessLine({ won: true, wrongGuesses: 4, total: 5 }), '❌❌❌❌✅ 5/5');
+    assert.equal(guessLine({ won: false, wrongGuesses: 5, total: 5 }), '❌❌❌❌❌ X/5');
+});
+
+test('share: result text includes the streak only from 2 days', async () => {
+    const { buildResultShare, withLink } = await import('../js/share.js');
+    const base = { puzzleID: 12, difficulty: 'Hard', grid: '🟩🟦', won: true, wrongGuesses: 1, total: 5, timeSpent: 75, url: 'https://x.test/' };
+    const one = buildResultShare({ ...base, streak: 1 });
+    assert.equal(one.text, 'Pseudoku — #12 (Hard)\n\n🟩🟦\nGuesses: ❌✅⚪⚪⚪ 2/5\nTime: 1:15');
+    assert.equal(one.url, 'https://x.test/');
+    assert.ok(buildResultShare({ ...base, streak: 7 }).text.endsWith('\nStreak: 🔥 7'));
+    assert.ok(withLink(one).endsWith('\nPlay: https://x.test/'));
+});
+
+test('share: stats text', async () => {
+    const { buildStatsShare } = await import('../js/share.js');
+    const summary = summarizeStats([
+        { date: '2026-01-01', win: true, guessesUsed: 1, timeSpent: 90 },
+        { date: '2026-01-02', win: true, guessesUsed: 0, timeSpent: 61 },
+        { date: '2026-01-03', win: false, guessesUsed: 5, timeSpent: 200 },
+        { date: '2026-01-04', win: true, guessesUsed: 2, timeSpent: 120 }
+    ], '2026-01-04');
+    const { text } = buildStatsShare(summary, { bestTime: 61, url: 'u' });
+    assert.equal(text, 'My Pseudoku stats\n\nPlayed: 4\nWin rate: 75%\nStreak: 1 · Best: 2\nBest time: 1:01');
+});
+
+const game = (date, win = true, guessesUsed = 2, timeSpent = 60) => ({ date, win, guessesUsed, timeSpent, v: STATS_VERSION });
+
+test('stats: best streak survives a loss and needs consecutive days', () => {
+    assert.equal(bestStreak([]), 0);
+    assert.equal(bestStreak([
+        game('2026-01-01'), game('2026-01-02'), game('2026-01-03'),
+        game('2026-01-04', false),
+        game('2026-01-05'),
+        game('2026-01-07'), game('2026-01-08')
+    ]), 3);
+    assert.equal(summarizeStats([game('2026-01-01'), game('2026-01-02'), game('2026-01-03', false)], '2026-01-03').bestStreak, 2);
+});
+
+test('stats: guess distribution counts wins by guess and losses', () => {
+    const d = guessDistribution([game('2026-01-01', true, 1), game('2026-01-02', true, 3), game('2026-01-03', true, 3), game('2026-01-04', false, 5)]);
+    assert.deepEqual(d, { wins: [1, 0, 2, 0, 0], losses: 1 });
+});
+
+test('stats: daily series fills skipped days with null', () => {
+    const s = dailySeries([game('2026-02-27', true, 1, 10), game('2026-03-02', true, 1, 20)], 'timeSpent');
+    assert.deepEqual(s.dates, ['2026-02-27', '2026-02-28', '2026-03-01', '2026-03-02']);
+    assert.deepEqual(s.values, [10, null, null, 20]);
+    assert.deepEqual(dailySeries([], 'timeSpent'), { dates: [], values: [] });
+});
+
+test('backup: codes round-trip, reject junk and merge without overwriting', () => {
+    const history = [game('2026-01-01', true, 1, 30), game('2026-01-02', false, 5, 99)];
+    const code = encodeStatsBackup(history);
+    assert.deepEqual(decodeStatsBackup(code), history);
+    assert.deepEqual(decodeStatsBackup(`  ${code.slice(0, 20)}\n${code.slice(20)} `), history, 'whitespace from pasting is ignored');
+    assert.equal(decodeStatsBackup('hello'), null);
+    assert.equal(decodeStatsBackup('PSEUDOKU1:not-base64!!'), null);
+    assert.equal(decodeStatsBackup('PSEUDOKU1:' + btoa('[["2026-01-01",1,9,30]]')), null, 'guesses out of range');
+
+    const { history: merged, added } = mergeStats([game('2026-01-02', true, 2, 50)], history.concat(history));
+    assert.equal(added, 1, 'duplicates and days already played are skipped');
+    assert.equal(merged.find(e => e.date === '2026-01-02').win, true, 'local result kept');
+
+    const storage = new MemoryStorage();
+    recordResult(storage, game('2026-01-03'));
+    assert.deepEqual(importStatsBackup(storage, code), { added: 2, total: 3 });
+    assert.equal(importStatsBackup(storage, 'nope'), null);
+    assert.equal(readStats(storage).length, 3);
+});
+
+test('share: hiding the timer leaves the time out', async () => {
+    const { buildResultShare } = await import('../js/share.js');
+    const base = { puzzleID: 1, grid: '🟦', won: true, wrongGuesses: 0, total: 5, timeSpent: 75, streak: 0, url: 'u' };
+    assert.ok(buildResultShare(base).text.includes('Time: 1:15'));
+    assert.ok(!buildResultShare({ ...base, showTime: false }).text.includes('Time'));
+});
+
+test('share: high-contrast squares are all different from each other', async () => {
+    const { CELL_EMOJI } = await import('../js/share.js');
+    for (const palette of Object.values(CELL_EMOJI)) {
+        assert.equal(new Set(Object.values(palette)).size, Object.keys(palette).length);
+    }
+});
+
+test('settings: defaults, and invalid saved values are ignored', async () => {
+    const { readSettings, writeSettings, DEFAULT_SETTINGS, SETTINGS_KEY } = await import('../js/settings.js');
+    const storage = new MemoryStorage();
+    assert.deepEqual(readSettings(storage), DEFAULT_SETTINGS);
+    writeSettings(storage, { theme: 'dark', highContrast: true, hideTimer: false });
+    assert.deepEqual(readSettings(storage), { theme: 'dark', highContrast: true, hideTimer: false });
+    storage.setItem(SETTINGS_KEY, JSON.stringify({ theme: 'purple', highContrast: 'yes' }));
+    assert.deepEqual(readSettings(storage), DEFAULT_SETTINGS);
+    storage.setItem(SETTINGS_KEY, '{not json');
+    assert.deepEqual(readSettings(storage), DEFAULT_SETTINGS);
 });

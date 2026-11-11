@@ -44,6 +44,12 @@ export const daysBetween = (a, b) => {
     return Math.round((toUTC(b) - toUTC(a)) / MS_PER_DAY);
 };
 
+// The date string `days` after date string s ("YYYY-MM-DD").
+export const addDays = (s, days) => {
+    const [y, m, d] = s.split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+};
+
 // Hours, minutes and seconds on the Chicago clock at `date`.
 const chicagoClock = (date) => {
     const parts = new Intl.DateTimeFormat('en-US', {

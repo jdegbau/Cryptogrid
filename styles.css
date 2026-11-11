@@ -1,6 +1,6 @@
 /* ==========================================================================
    Design tokens. Every colour lives here; the dark theme follows the system
-   setting. Text/background pairs meet WCAG AA (4.5:1) in both themes.
+   setting unless overridden in settings. Text/background pairs meet WCAG AA (4.5:1) in both themes.
    ========================================================================== */
 :root {
     color-scheme: light;
@@ -37,6 +37,8 @@
     --incorrect-text: #a8231b;
     --hint-bg: #fff0bd;
     --hint-text: #6e4a00;
+    --brand-green: #11612f;      /* logo squares; fixed, unlike the cell colours */
+    --brand-amber: #6e4a00;
     --revealed-bg: #ffe5cf;
     --revealed-text: #8f3700;
 
@@ -57,8 +59,10 @@
     --radius-lg: 22px;
 }
 
+/* Dark theme: follows the system unless the player picked Light or Dark in
+   settings (data-theme on <html>). The block is repeated for the manual choice. */
 @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
         color-scheme: dark;
 
         --bg: #0f0e17;
@@ -91,6 +95,8 @@
         --incorrect-text: #ffaaa4;
         --hint-bg: #43360a;
         --hint-text: #ffdf7a;
+        --brand-green: #8fe3aa;
+        --brand-amber: #ffdf7a;
         --revealed-bg: #46290c;
         --revealed-text: #ffbf86;
 
@@ -104,6 +110,101 @@
         --toast-text: #0f0e17;
         --backdrop: rgba(0, 0, 0, 0.7);
     }
+}
+
+:root[data-theme="dark"] {
+    color-scheme: dark;
+
+    --bg: #0f0e17;
+    --surface: #1a1926;
+    --surface-2: #24222f;
+    --text: #ecebf5;
+    --text-muted: #a5a2b9;
+    --border: #2e2b3e;
+    --border-strong: #423e57;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 8px 28px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.6);
+
+    --accent: #a995ff;
+    --accent-soft: #2b2547;
+    --accent-line: #201e30;
+    --primary-bg: #6a48ee;
+    --primary-bg-hover: #7a5cf5;
+    --on-primary: #ffffff;
+    --button-disabled-bg: #2e2b3e;
+    --button-disabled-text: #a5a2b9;
+
+    --cell-bg: #1f1d2c;
+    --cell-text: #ecebf5;
+    --preset-bg: #2b2547;
+    --preset-text: #cfc4ff;
+    --correct-bg: #133823;
+    --correct-text: #8fe3aa;
+    --incorrect-bg: #461b1c;
+    --incorrect-text: #ffaaa4;
+    --hint-bg: #43360a;
+    --hint-text: #ffdf7a;
+    --brand-green: #8fe3aa;
+    --brand-amber: #ffdf7a;
+    --revealed-bg: #46290c;
+    --revealed-text: #ffbf86;
+
+    --focus-ring: #a995ff;
+
+    --popover-bg: #24222f;
+    --chip-bg: #2e2b3e;
+    --chip-text: #cfc4ff;
+
+    --toast-bg: #ecebf5;
+    --toast-text: #0f0e17;
+    --backdrop: rgba(0, 0, 0, 0.7);
+}
+
+:root[data-theme="light"] {
+    color-scheme: light;
+}
+
+/* High contrast (settings): blue for correct, orange for close, grey for
+   wrong, so no state depends on telling red from green. */
+:root[data-contrast="high"] {
+    --correct-bg: #1d5fc4;
+    --correct-text: #ffffff;
+    --incorrect-bg: #e2e1e8;
+    --incorrect-text: #3a3946;
+    --hint-bg: #f59b23;
+    --hint-text: #241400;
+    --revealed-bg: #fff3d6;
+    --revealed-text: #6b3d00;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root[data-contrast="high"]:not([data-theme="light"]) {
+        --correct-bg: #2c66cc;
+        --correct-text: #ffffff;
+        --incorrect-bg: #35343f;
+        --incorrect-text: #dcdbe6;
+        --hint-bg: #f5a33b;
+        --hint-text: #1d1000;
+        --revealed-bg: #3d2a0c;
+        --revealed-text: #ffd08a;
+    }
+}
+
+:root[data-contrast="high"][data-theme="dark"] {
+    --correct-bg: #2c66cc;
+    --correct-text: #ffffff;
+    --incorrect-bg: #35343f;
+    --incorrect-text: #dcdbe6;
+    --hint-bg: #f5a33b;
+    --hint-text: #1d1000;
+    --revealed-bg: #3d2a0c;
+    --revealed-text: #ffd08a;
+}
+
+/* Hide timer (settings): the clock still runs for stats. */
+:root[data-hide-timer] #timer {
+    display: none;
 }
 
 /* ==========================================================================
@@ -226,8 +327,8 @@ svg .fill {
     background: var(--accent);
 }
 
-.brand-mark i:nth-child(2) { background: var(--correct-text); }
-.brand-mark i:nth-child(3) { background: var(--hint-text); opacity: 0.85; }
+.brand-mark i:nth-child(2) { background: var(--brand-green); }
+.brand-mark i:nth-child(3) { background: var(--brand-amber); opacity: 0.85; }
 .brand-mark i:nth-child(4) { opacity: 0.45; }
 
 .app-bar-actions {
@@ -1104,14 +1205,16 @@ svg .fill {
 }
 
 /* Stats */
+/* Seven tiles: four streak/result tiles on top, three averages below. */
 .stats-summary {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(12, 1fr);
     gap: 8px;
     margin: 6px 0 12px;
 }
 
 .stat-tile {
+    grid-column: span 4;
     display: flex;
     flex-direction: column-reverse;
     align-items: center;
@@ -1120,6 +1223,10 @@ svg .fill {
     border-radius: var(--radius);
     background: var(--surface-2);
     text-align: center;
+}
+
+.stat-tile:nth-child(-n+4) {
+    grid-column: span 3;
 }
 
 .stat-tile dt {
@@ -1134,6 +1241,159 @@ svg .fill {
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
+}
+
+.stats-share {
+    width: 100%;
+    margin-bottom: 14px;
+}
+
+/* Settings */
+.settings .setting {
+    margin: 0;
+    padding: 14px 0;
+    border: none;
+    border-bottom: 1px solid var(--border);
+}
+
+.settings .setting:last-child {
+    border-bottom: none;
+}
+
+.setting-name {
+    display: block;
+    padding: 0;
+    font-weight: 600;
+}
+
+.setting-help {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.88rem;
+    color: var(--text-muted);
+}
+
+.segmented {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    margin-top: 10px;
+    padding: 4px;
+    border-radius: var(--radius);
+    background: var(--surface-2);
+}
+
+.segmented label {
+    position: relative;
+}
+
+.segmented input {
+    position: absolute;
+    opacity: 0;
+    inset: 0;
+    margin: 0;
+    cursor: pointer;
+}
+
+.segmented span {
+    display: block;
+    padding: 9px 4px;
+    border-radius: var(--radius-sm);
+    text-align: center;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.segmented input:checked + span {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow-sm);
+}
+
+.segmented input:focus-visible + span {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 1px;
+}
+
+.setting-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    cursor: pointer;
+}
+
+/* A switch drawn on the checkbox itself */
+.setting-toggle input {
+    flex: none;
+    appearance: none;
+    position: relative;
+    width: 46px;
+    height: 28px;
+    margin: 0;
+    border-radius: 999px;
+    background: var(--border-strong);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.setting-toggle input::before {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    transition: transform 0.15s;
+}
+
+.setting-toggle input:checked {
+    background: var(--primary-bg);
+}
+
+.setting-toggle input:checked::before {
+    transform: translateX(18px);
+}
+
+.setting-toggle input:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .setting-toggle input,
+    .setting-toggle input::before {
+        transition: none;
+    }
+}
+
+/* Copy-by-hand fallback */
+.copy-hint {
+    margin: 4px 0 12px;
+    font-size: 0.92rem;
+}
+
+.copy-text {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px;
+    border: 1.5px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.95rem;
+    line-height: 1.35;
+    resize: none;
+}
+
+.copy-again {
+    width: 100%;
+    margin-top: 12px;
 }
 
 .stats-chart-status {
@@ -1158,6 +1418,93 @@ svg .fill {
 
 .chart-title {
     margin-top: 16px;
+}
+
+/* Guess distribution */
+.distribution {
+    display: grid;
+    gap: 5px;
+    margin: 0 0 12px;
+    padding: 0;
+    list-style: none;
+}
+
+.distribution-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.distribution-label {
+    width: 1.2em;
+    font-weight: 600;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.distribution-bar {
+    box-sizing: border-box;
+    min-width: 2em;
+    width: var(--share);
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: var(--surface-2);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    transition: width 0.4s ease;
+}
+
+.distribution-row.today .distribution-bar {
+    background: var(--primary-bg);
+    color: var(--on-primary);
+}
+
+.distribution-row.today .distribution-label {
+    color: var(--text);
+}
+
+/* Moving stats between devices */
+.stats-backup {
+    margin-top: 18px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+}
+
+.stats-backup summary {
+    cursor: pointer;
+    font-weight: 600;
+    padding: 6px 0;
+}
+
+.stats-backup .muted {
+    font-size: 0.92rem;
+}
+
+.stats-backup label {
+    display: block;
+    margin: 14px 0 6px;
+    font-weight: 600;
+    font-size: 0.92rem;
+}
+
+.stats-backup .button {
+    width: 100%;
+}
+
+.stats-backup textarea {
+    margin-bottom: 10px;
+    word-break: break-all;
+}
+
+.stats-import-status {
+    margin: 8px 0 0;
+    font-size: 0.92rem;
+    text-align: center;
+}
+
+.stats-import-status:empty {
+    display: none;
 }
 
 /* ==========================================================================

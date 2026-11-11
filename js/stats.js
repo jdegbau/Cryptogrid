@@ -1,12 +1,13 @@
 // Stats dialog. Chart.js is pinned and only loaded the first time the
 // dialog opens; the summary shows straight away and the charts follow.
-import { readStats, summarizeStats } from './storage.js';
+import { readStats, summarizeStats, guessDistribution, dailySeries, encodeStatsBackup, importStatsBackup } from './storage.js';
 import { formatTime } from './date.js';
+import { buildStatsShare, shareText, copyOrShow, gameUrl } from './share.js';
 
 const CHART_JS_SRC = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js';
 const CHART_JS_INTEGRITY = 'sha384-dug+JxfBvklEQdJ4AYuBBAIScUz0bVN73xpy273gcAwHjb3qI0fXmuYNaNfdyYJG';
 
-const COLORS = { win: '#22a95a', loss: '#e0524a', guesses: '#7c5cff', time: '#f59e0b' };
+const COLORS = { win: '#22a95a', loss: '#e0524a', time: '#f59e0b' };
 
 // Text, grid and slice-border colours from the current theme.
 const themeColors = () => {
@@ -40,14 +41,19 @@ const destroyCharts = () => {
     while (charts.length) charts.pop().destroy();
 };
 
-const renderSummary = (summary) => {
+const bestTime = (summary) => {
     const wins = summary.sorted.filter(e => e.win && Number.isFinite(e.timeSpent));
-    const best = wins.length ? Math.min(...wins.map(e => e.timeSpent)) : null;
+    return wins.length ? Math.min(...wins.map(e => e.timeSpent)) : null;
+};
+
+const renderSummary = (summary) => {
+    const best = bestTime(summary);
     const time = (s) => (s === null || !summary.played ? '–' : formatTime(Math.round(s)));
     const tiles = [
         ['Played', summary.played],
         ['Win %', summary.played ? Math.round(summary.winRate) : '–'],
         ['Streak', summary.streak],
+        ['Best streak', summary.bestStreak],
         ['Avg. guesses', summary.played ? summary.avgGuesses.toFixed(1) : '–'],
         ['Avg. time', time(summary.avgTime)],
         ['Best time', time(best)]
@@ -66,12 +72,53 @@ const renderSummary = (summary) => {
     });
 };
 
+// Bars for wins on each guess, then losses; today's result is highlighted.
+// Plain HTML, so it shows even when Chart.js can't load.
+const renderDistribution = (summary, today) => {
+    const wrap = document.getElementById('stats-distribution-wrap');
+    const list = document.getElementById('stats-distribution');
+    wrap.hidden = !summary.played;
+    list.textContent = '';
+    if (!summary.played) return;
+    const { wins, losses } = guessDistribution(summary.sorted);
+    const todays = summary.sorted.find(e => e.date === today);
+    const rows = wins.map((count, i) => ({
+        label: String(i + 1),
+        name: i === 0 ? 'Solved on guess 1' : `Solved on guess ${i + 1}`,
+        count,
+        isToday: !!todays && todays.win && Math.min(Math.max(todays.guessesUsed, 1), 5) === i + 1
+    }));
+    rows.push({ label: 'X', name: 'Not solved', count: losses, isToday: !!todays && !todays.win });
+    const max = Math.max(...rows.map(r => r.count), 1);
+    rows.forEach(row => {
+        const li = document.createElement('li');
+        li.className = row.isToday ? 'distribution-row today' : 'distribution-row';
+        const label = document.createElement('span');
+        label.className = 'distribution-label';
+        label.setAttribute('aria-hidden', 'true');
+        label.textContent = row.label;
+        const bar = document.createElement('span');
+        bar.className = 'distribution-bar';
+        bar.style.setProperty('--share', `${(row.count / max) * 100}%`);
+        bar.setAttribute('aria-hidden', 'true');
+        bar.textContent = row.count;
+        const text = document.createElement('span');
+        text.className = 'sr-only';
+        text.textContent = `${row.name}: ${row.count} ${row.count === 1 ? 'game' : 'games'}${row.isToday ? ' (today)' : ''}`;
+        li.append(label, bar, text);
+        list.append(li);
+    });
+};
+
+// "2026-10-21" → "Oct 21" (the date is a calendar day, so read it as UTC).
+const shortDate = (date) =>
+    new Date(`${date}T00:00:00Z`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' });
+
 const renderCharts = (Chart, summary) => {
     destroyCharts();
     const theme = themeColors();
     Chart.defaults.color = theme.text;
     Chart.defaults.borderColor = theme.grid;
-    const dates = summary.sorted.map(e => e.date);
     const animation = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? false : undefined;
 
     charts.push(new Chart(document.getElementById('stats-win-chart'), {
@@ -88,15 +135,24 @@ const renderCharts = (Chart, summary) => {
         options: { animation, responsive: false, plugins: { legend: { position: 'bottom' } } }
     }));
 
-    const lineChart = (canvasId, label, data, color, yScale) => new Chart(document.getElementById(canvasId), {
+    // Every day from the first game to the last; days not played are gaps.
+    const series = dailySeries(summary.sorted, 'timeSpent');
+    charts.push(new Chart(document.getElementById('stats-time-chart'), {
         type: 'line',
-        data: { labels: dates, datasets: [{ label, data, borderColor: color, backgroundColor: `${color}26`, fill: true, tension: 0.35, pointRadius: 3, borderWidth: 2.5 }] },
-        options: { animation, plugins: { legend: { display: false } }, scales: { y: yScale } }
-    });
-    charts.push(lineChart('stats-guess-chart', 'Guesses Used', summary.sorted.map(e => e.guessesUsed), COLORS.guesses,
-        { min: 0, max: 5, ticks: { stepSize: 1 } }));
-    charts.push(lineChart('stats-time-chart', 'Time Spent (s)', summary.sorted.map(e => e.timeSpent), COLORS.time,
-        { min: 0 }));
+        data: {
+            labels: series.dates,
+            datasets: [{
+                label: 'Time Spent (s)', data: series.values, spanGaps: false,
+                borderColor: COLORS.time, backgroundColor: `${COLORS.time}26`, fill: true,
+                tension: 0.35, pointRadius: 3, borderWidth: 2.5
+            }]
+        },
+        options: {
+            animation,
+            plugins: { legend: { display: false } },
+            scales: { x: { ticks: { maxTicksLimit: 6, maxRotation: 0, callback: (_, i) => shortDate(series.dates[i]) } }, y: { min: 0 } }
+        }
+    }));
 };
 
 // `getToday()` returns today's puzzle date, used for the streak.
@@ -106,11 +162,36 @@ export const setupStatsDialog = (storage, getToday) => {
     const closeButton = document.getElementById('stats-close');
     const status = document.getElementById('stats-chart-status');
     const chartArea = document.getElementById('stats-charts');
+    const shareButton = document.getElementById('stats-share');
+    let share = null;
+    shareButton.addEventListener('click', () => { if (share) shareText(share, shareButton); });
 
-    const open = async () => {
+    // Backup codes for moving stats between devices.
+    const exportButton = document.getElementById('stats-export');
+    const importButton = document.getElementById('stats-import');
+    const importCode = document.getElementById('stats-import-code');
+    const importStatus = document.getElementById('stats-import-status');
+    exportButton.addEventListener('click', () => copyOrShow(encodeStatsBackup(readStats(storage)), exportButton));
+    importButton.addEventListener('click', () => {
+        const result = importStatsBackup(storage, importCode.value);
+        if (!result) {
+            importStatus.textContent = "That doesn't look like a backup code. Copy the whole code and try again.";
+            return;
+        }
+        importCode.value = '';
+        importStatus.textContent = result.added
+            ? `Added ${result.added} ${result.added === 1 ? 'game' : 'games'}. You now have ${result.total} in total.`
+            : 'Nothing new to add: every game in that code is already here.';
+        if (result.added) refresh();
+    });
+
+    // Fill the dialog from saved stats; also used after an import.
+    const refresh = async () => {
         const summary = summarizeStats(readStats(storage), getToday());
         renderSummary(summary);
-        dialog.showModal();
+        renderDistribution(summary, getToday());
+        share = summary.played ? buildStatsShare(summary, { bestTime: bestTime(summary), url: gameUrl() }) : null;
+        shareButton.hidden = !share;
 
         chartArea.hidden = true;
         if (!summary.played) {
@@ -127,6 +208,12 @@ export const setupStatsDialog = (storage, getToday) => {
         } catch (e) {
             status.textContent = "Charts couldn't be loaded. Your stats are listed above.";
         }
+    };
+
+    const open = () => {
+        importStatus.textContent = '';
+        dialog.showModal();
+        refresh();
     };
 
     openButton.addEventListener('click', open);

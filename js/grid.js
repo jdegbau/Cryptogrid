@@ -283,12 +283,14 @@ export const restoreCells = (userSolution, cellStates, answerGrid, createInput) 
     });
 };
 
-export const gridEmojis = (answerGrid) =>
+// One emoji per cell for sharing; `emoji` maps each state to its square
+// (see CELL_EMOJI in share.js).
+export const gridEmojis = (answerGrid, emoji) =>
     answerGrid.map((rowValues, row) => rowValues.map((_, col) => {
         const cellDiv = cellAt(row, col);
-        if (cellDiv.classList.contains('preset')) return '🟦';
-        if (cellDiv.classList.contains('correct')) return '🟩';
-        if (cellDiv.classList.contains('incorrect')) return '🟥';
-        if (cellDiv.classList.contains('hint')) return '🟨';
-        return '⬜';
+        if (cellDiv.classList.contains('preset')) return emoji.preset;
+        if (cellDiv.classList.contains('correct')) return emoji.correct;
+        if (cellDiv.classList.contains('incorrect')) return emoji.incorrect;
+        if (cellDiv.classList.contains('hint')) return emoji.hint;
+        return emoji.empty;
     }).join('')).join('\n');
