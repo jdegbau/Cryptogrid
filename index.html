@@ -74,7 +74,7 @@
         <button class="button primary" id="check-button">Submit guess</button>
         <button class="button primary" id="share-button" hidden>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7.5 7.5 12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>
-          Share your score
+          <span class="button-label">Share your score</span>
         </button>
         <p class="result" id="result" aria-live="polite"></p>
         <p class="countdown" id="countdown" hidden></p>
@@ -130,6 +130,10 @@
     </div>
     <div class="sheet-body">
       <dl id="stats-summary" class="stats-summary"></dl>
+      <button class="button primary stats-share" id="stats-share" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7.5 7.5 12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>
+        <span class="button-label">Share your stats</span>
+      </button>
       <p id="stats-chart-status" class="stats-chart-status" aria-live="polite"></p>
       <div id="stats-charts" hidden>
         <div class="stats-chart stats-chart-pie">
@@ -144,6 +148,20 @@
           <canvas id="stats-time-chart" height="110" role="img" aria-label="Time spent per game"></canvas>
         </div>
       </div>
+    </div>
+  </dialog>
+
+  <dialog id="copy-modal" class="sheet" aria-labelledby="copy-title">
+    <div class="sheet-header">
+      <h2 id="copy-title">Copy to share</h2>
+      <button id="copy-close" class="icon-button sheet-close" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <p class="muted copy-hint">This browser wouldn't let us copy automatically. Select the text below and copy it.</p>
+      <textarea id="copy-text" class="copy-text" readonly aria-label="Text to share"></textarea>
+      <button class="button primary copy-again" id="copy-again">Try copying again</button>
     </div>
   </dialog>
 

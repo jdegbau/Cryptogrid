@@ -167,3 +167,33 @@ test('storage: streak needs consecutive days', () => {
     assert.equal(currentStreak([e('2026-11-10', false)], '2026-11-10'), 0);
     assert.equal(currentStreak([], '2026-11-10'), 0);
 });
+
+test('share: guess line marks misses, the win and unused guesses', async () => {
+    const { guessLine } = await import('../js/share.js');
+    assert.equal(guessLine({ won: true, wrongGuesses: 0, total: 5 }), '✅⚪⚪⚪⚪ 1/5');
+    assert.equal(guessLine({ won: true, wrongGuesses: 2, total: 5 }), '❌❌✅⚪⚪ 3/5');
+    assert.equal(guessLine({ won: true, wrongGuesses: 4, total: 5 }), '❌❌❌❌✅ 5/5');
+    assert.equal(guessLine({ won: false, wrongGuesses: 5, total: 5 }), '❌❌❌❌❌ X/5');
+});
+
+test('share: result text includes the streak only from 2 days', async () => {
+    const { buildResultShare, withLink } = await import('../js/share.js');
+    const base = { puzzleID: 12, difficulty: 'Hard', grid: '🟩🟦', won: true, wrongGuesses: 1, total: 5, timeSpent: 75, url: 'https://x.test/' };
+    const one = buildResultShare({ ...base, streak: 1 });
+    assert.equal(one.text, 'Pseudoku — #12 (Hard)\n\n🟩🟦\nGuesses: ❌✅⚪⚪⚪ 2/5\nTime: 1:15');
+    assert.equal(one.url, 'https://x.test/');
+    assert.ok(buildResultShare({ ...base, streak: 7 }).text.endsWith('\nStreak: 🔥 7'));
+    assert.ok(withLink(one).endsWith('\nPlay: https://x.test/'));
+});
+
+test('share: stats text', async () => {
+    const { buildStatsShare } = await import('../js/share.js');
+    const summary = summarizeStats([
+        { date: '2026-01-01', win: true, guessesUsed: 1, timeSpent: 90 },
+        { date: '2026-01-02', win: true, guessesUsed: 0, timeSpent: 61 },
+        { date: '2026-01-03', win: false, guessesUsed: 5, timeSpent: 200 },
+        { date: '2026-01-04', win: true, guessesUsed: 2, timeSpent: 120 }
+    ], '2026-01-04');
+    const { text } = buildStatsShare(summary, { bestTime: 61, url: 'u' });
+    assert.equal(text, 'My Pseudoku stats\n\nPlayed: 4\nWin rate: 75%\nStreak: 1\nBest time: 1:01');
+});

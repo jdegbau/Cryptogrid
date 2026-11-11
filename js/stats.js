@@ -2,6 +2,7 @@
 // dialog opens; the summary shows straight away and the charts follow.
 import { readStats, summarizeStats } from './storage.js';
 import { formatTime } from './date.js';
+import { buildStatsShare, shareText, gameUrl } from './share.js';
 
 const CHART_JS_SRC = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js';
 const CHART_JS_INTEGRITY = 'sha384-dug+JxfBvklEQdJ4AYuBBAIScUz0bVN73xpy273gcAwHjb3qI0fXmuYNaNfdyYJG';
@@ -40,9 +41,13 @@ const destroyCharts = () => {
     while (charts.length) charts.pop().destroy();
 };
 
-const renderSummary = (summary) => {
+const bestTime = (summary) => {
     const wins = summary.sorted.filter(e => e.win && Number.isFinite(e.timeSpent));
-    const best = wins.length ? Math.min(...wins.map(e => e.timeSpent)) : null;
+    return wins.length ? Math.min(...wins.map(e => e.timeSpent)) : null;
+};
+
+const renderSummary = (summary) => {
+    const best = bestTime(summary);
     const time = (s) => (s === null || !summary.played ? '–' : formatTime(Math.round(s)));
     const tiles = [
         ['Played', summary.played],
@@ -106,10 +111,15 @@ export const setupStatsDialog = (storage, getToday) => {
     const closeButton = document.getElementById('stats-close');
     const status = document.getElementById('stats-chart-status');
     const chartArea = document.getElementById('stats-charts');
+    const shareButton = document.getElementById('stats-share');
+    let share = null;
+    shareButton.addEventListener('click', () => { if (share) shareText(share, shareButton); });
 
     const open = async () => {
         const summary = summarizeStats(readStats(storage), getToday());
         renderSummary(summary);
+        share = summary.played ? buildStatsShare(summary, { bestTime: bestTime(summary), url: gameUrl() }) : null;
+        shareButton.hidden = !share;
         dialog.showModal();
 
         chartArea.hidden = true;

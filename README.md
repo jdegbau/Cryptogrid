@@ -24,6 +24,7 @@ Then open <http://localhost:8000>.
 | `js/input.js` | Cell inputs, the on-screen number pad and the guess-history popover |
 | `js/ui.js` | Result line, toast, dialogs, win/lose effects |
 | `js/stats.js` | Stats dialog; loads Chart.js (pinned, with an integrity hash) on first open |
+| `js/share.js` | Share text for results and stats; share sheet on phones, clipboard elsewhere, copy-by-hand fallback |
 | `js/date.js` | Today's puzzle, the countdown to the next one, time formatting |
 | `js/storage.js` | Saved game and stats history (localStorage) |
 | `js/rules.js` | What each clue checks and how it's worded, shared by the game and generator |
