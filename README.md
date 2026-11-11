@@ -2,7 +2,7 @@
 
 A daily logic puzzle. Fill a 4×4 grid with the numbers 1–9 so every row and column matches its clue. You get five guesses, and each one colours every cell: correct, wrong, or within 2 of the answer.
 
-Everyone gets the same puzzle on the same day, by the calendar in Chicago. Puzzles get harder through the week: Monday is the easiest and Sunday the hardest. Every puzzle has exactly one solution.
+Everyone gets the same puzzle on the same day, by the calendar in Chicago. Puzzles get harder through the week: Monday is the easiest and Sunday the hardest. Every puzzle has exactly one solution. Puzzle #1 is 10 November 2026, and the list of 1092 runs until 5 November 2029 before repeating.
 
 ## Running it locally
 

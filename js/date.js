@@ -2,7 +2,7 @@
 // calendar day in Chicago, wherever they are and whatever the DST state.
 
 export const PUZZLE_TIME_ZONE = 'America/Chicago';
-const PUZZLE_EPOCH_UTC = Date.UTC(2024, 4, 21); // 21 May 2024 is puzzle day 0
+const PUZZLE_EPOCH_UTC = Date.UTC(2026, 10, 10); // 10 Nov 2026 is puzzle day 0 (puzzle #1)
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 // The Chicago calendar date at `now`, as "YYYY-MM-DD".
@@ -21,7 +21,7 @@ export const getPuzzleDayIndex = (now = new Date()) => {
     return Math.round((Date.UTC(y, m - 1, d) - PUZZLE_EPOCH_UTC) / MS_PER_DAY);
 };
 
-// Weekday of puzzle day 0 (21 May 2024), Monday = 0.
+// Weekday of puzzle day 0 (10 Nov 2026, a Tuesday), Monday = 0.
 const EPOCH_WEEKDAY = (new Date(PUZZLE_EPOCH_UTC).getUTCDay() + 6) % 7;
 export const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
