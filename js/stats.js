@@ -1,11 +1,12 @@
 // Stats dialog. Chart.js is pinned and only loaded the first time the
 // dialog opens; the summary shows straight away and the charts follow.
 import { readStats, summarizeStats } from './storage.js';
+import { formatTime } from './date.js';
 
 const CHART_JS_SRC = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js';
 const CHART_JS_INTEGRITY = 'sha384-dug+JxfBvklEQdJ4AYuBBAIScUz0bVN73xpy273gcAwHjb3qI0fXmuYNaNfdyYJG';
 
-const COLORS = { win: '#00c853', loss: '#e53935', guesses: '#2196f3', time: '#ff9800' };
+const COLORS = { win: '#22a95a', loss: '#e0524a', guesses: '#7c5cff', time: '#f59e0b' };
 
 // Text, grid and slice-border colours from the current theme.
 const themeColors = () => {
@@ -40,21 +41,28 @@ const destroyCharts = () => {
 };
 
 const renderSummary = (summary) => {
-    const rows = [
-        ['Games played', summary.played],
-        ['Win rate', `${summary.winRate.toFixed(1)}%`],
-        ['Current streak', summary.streak],
-        ['Avg. guesses used', summary.avgGuesses.toFixed(2)],
-        ['Avg. time (s)', summary.avgTime.toFixed(1)]
+    const wins = summary.sorted.filter(e => e.win && Number.isFinite(e.timeSpent));
+    const best = wins.length ? Math.min(...wins.map(e => e.timeSpent)) : null;
+    const time = (s) => (s === null || !summary.played ? '–' : formatTime(Math.round(s)));
+    const tiles = [
+        ['Played', summary.played],
+        ['Win %', summary.played ? Math.round(summary.winRate) : '–'],
+        ['Streak', summary.streak],
+        ['Avg. guesses', summary.played ? summary.avgGuesses.toFixed(1) : '–'],
+        ['Avg. time', time(summary.avgTime)],
+        ['Best time', time(best)]
     ];
     const list = document.getElementById('stats-summary');
     list.textContent = '';
-    rows.forEach(([term, value]) => {
+    tiles.forEach(([term, value]) => {
+        const tile = document.createElement('div');
+        tile.className = 'stat-tile';
         const dt = document.createElement('dt');
         dt.textContent = term;
         const dd = document.createElement('dd');
         dd.textContent = value;
-        list.append(dt, dd);
+        tile.append(dt, dd);
+        list.append(tile);
     });
 };
 
@@ -82,7 +90,7 @@ const renderCharts = (Chart, summary) => {
 
     const lineChart = (canvasId, label, data, color, yScale) => new Chart(document.getElementById(canvasId), {
         type: 'line',
-        data: { labels: dates, datasets: [{ label, data, borderColor: color, backgroundColor: `${color}33`, fill: true }] },
+        data: { labels: dates, datasets: [{ label, data, borderColor: color, backgroundColor: `${color}26`, fill: true, tension: 0.35, pointRadius: 3, borderWidth: 2.5 }] },
         options: { animation, plugins: { legend: { display: false } }, scales: { y: yScale } }
     });
     charts.push(lineChart('stats-guess-chart', 'Guesses Used', summary.sorted.map(e => e.guessesUsed), COLORS.guesses,
@@ -103,9 +111,12 @@ export const setupStatsDialog = (storage, getToday) => {
         const summary = summarizeStats(readStats(storage), getToday());
         renderSummary(summary);
         dialog.showModal();
-        closeButton.focus();
 
         chartArea.hidden = true;
+        if (!summary.played) {
+            status.textContent = 'Finish a puzzle to start your charts.';
+            return;
+        }
         status.textContent = 'Loading charts…';
         try {
             const Chart = await loadChartJs();

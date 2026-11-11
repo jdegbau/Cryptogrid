@@ -6,9 +6,9 @@ import {
     cellKey, editableInputs, renderGrid, renderClues, readUserSolution, readCellStates,
     isSolved, markGuesses, revealAnswers, restoreCells, gridEmojis, highlightClues
 } from './grid.js';
-import { createCellInput, attachGuessPopover, installPopoverDismiss } from './input.js';
+import { createCellInput, attachGuessPopover, setupKeypad, guessQuality } from './input.js';
 import {
-    setResultMessage, setEndResult, showToast, updateGuessIcons, setupTabs,
+    setResultMessage, setEndResult, showToast, updateGuessIcons, setupDialog,
     playWinEffect, playLoseEffect, shake
 } from './ui.js';
 import { setupStatsDialog } from './stats.js';
@@ -19,6 +19,7 @@ const LOSE_MESSAGE = "Game over! You've used all your guesses.";
 const LOAD_ERROR = "Sorry, today's puzzle couldn't be loaded.";
 
 const storage = window.localStorage;
+const HELP_SEEN_KEY = 'pseudokuSeenHelp';
 
 const state = {
     puzzles: [],
@@ -44,7 +45,7 @@ const clock = { bankedMs: 0, since: null, running: false, tick: null };
 const elapsedSeconds = () =>
     Math.floor((clock.bankedMs + (clock.since !== null ? Date.now() - clock.since : 0)) / 1000);
 
-const showTime = () => { $('timer').textContent = `Time: ${formatTime(elapsedSeconds())}`; };
+const showTime = () => { $('timer').textContent = formatTime(elapsedSeconds()); };
 
 const pauseClock = () => {
     if (clock.since !== null) {
@@ -110,7 +111,7 @@ const startCountdown = () => {
             clearInterval(countdownTimer);
             el.textContent = '';
             const button = document.createElement('button');
-            button.className = 'button';
+            button.className = 'button primary';
             button.textContent = "Play today's puzzle";
             button.addEventListener('click', () => window.location.reload());
             el.appendChild(button);
@@ -126,20 +127,50 @@ const startCountdown = () => {
     countdownTimer = setInterval(update, 1000);
 };
 
+// --- Number pad ---
+
+let keypad = null;
+
+const inputAt = (row, col) => document.querySelector(`.grid-cell input[data-row="${row}"][data-col="${col}"]`);
+
+// Digits from the pad go to the selected cell, if it is still open.
+const keypadTarget = () => {
+    if (!state.focusedCell) return null;
+    const input = inputAt(...state.focusedCell);
+    return input && !input.disabled ? input : null;
+};
+
+const keypadHistory = (input) => {
+    const row = Number(input.dataset.row);
+    const col = Number(input.dataset.col);
+    return guessesFor(row, col).map(value => ({ value, quality: guessQuality(value, state.answerGrid[row][col]) }));
+};
+
+// Select the first open cell (blank ones first) so the pad works straight away.
+const focusFirstOpenCell = () => {
+    const inputs = editableInputs().filter(i => !i.disabled);
+    const target = inputs.find(i => i.value === '') || inputs[0];
+    if (target) target.focus({ preventScroll: true });
+    else keypad?.update();
+};
+
 // --- Drawing ---
 
 const makeInput = (row, col) => createCellInput(row, col, { getGuesses: () => guessesFor(row, col) });
 
-// Clue highlight follows the focused cell; hovering a cell previews its clues.
+// Clue highlight follows the focused cell; hovering a cell previews its
+// clues in the list (pointer devices only).
 const setupClueHighlight = (cellDiv, row, col) => {
     cellDiv.addEventListener('focusin', () => {
         state.focusedCell = [row, col];
         highlightClues(row, col);
+        keypad?.update();
     });
-    cellDiv.addEventListener('mouseenter', () => highlightClues(row, col));
+    if (!window.matchMedia('(hover: hover)').matches) return;
+    cellDiv.addEventListener('mouseenter', () => highlightClues(row, col, { cards: false }));
     cellDiv.addEventListener('mouseleave', () => {
-        if (state.focusedCell) highlightClues(...state.focusedCell);
-        else highlightClues(null);
+        if (state.focusedCell) highlightClues(...state.focusedCell, { cards: false });
+        else highlightClues(null, { cards: false });
     });
 };
 
@@ -156,8 +187,17 @@ const drawPuzzle = () => {
         }
     });
     updateGuessIcons(state.guessesLeft, TOTAL_GUESSES);
-    const level = state.puzzle.difficulty ? ` · ${state.puzzle.difficulty}` : '';
-    $('puzzle-info').textContent = `Puzzle #${state.puzzleID}${level}`;
+    const info = $('puzzle-info');
+    info.textContent = `Puzzle #${state.puzzleID}`;
+    if (state.puzzle.difficulty) {
+        const chip = document.createElement('span');
+        chip.className = 'difficulty';
+        chip.textContent = state.puzzle.difficulty;
+        info.append(chip);
+    }
+    $('keypad').hidden = false;
+    $('active-clues').hidden = false;
+    highlightClues(null);
 };
 
 // --- End of game ---
@@ -190,6 +230,11 @@ const endGame = (won, { restoring = false } = {}) => {
 
     setEndResult(won ? WIN_MESSAGE : LOSE_MESSAGE, won ? '🎉' : '❌', restoring ? null : (won ? 'win' : 'lose'));
     editableInputs().forEach(input => { input.disabled = true; });
+    $('keypad').hidden = true;
+    $('active-clues').hidden = true;
+    highlightClues(null);
+    state.focusedCell = null;
+    if (document.activeElement && document.activeElement.closest?.('.grid-cell')) shareButton.focus({ preventScroll: true });
     startCountdown();
 
     const guessesUsed = TOTAL_GUESSES - state.guessesLeft;
@@ -250,14 +295,22 @@ const checkSolution = () => {
             revealAnswers(state.answerGrid);
             endGame(false);
         } else {
-            setResultMessage(`Incorrect! You have ${state.guessesLeft} guesses left.`);
+            const left = state.guessesLeft === 1 ? '1 guess left' : `${state.guessesLeft} guesses left`;
+            setResultMessage(`Not quite. ${left}.`);
+            focusFirstOpenCell();
         }
     }
+    keypad?.update();
     enableAfter(3000);
     saveGame();
 };
 
 // --- Loading ---
+
+const guessesLeftMessage = () =>
+    state.guessesLeft === TOTAL_GUESSES
+        ? `Fill the grid, then submit. You have ${TOTAL_GUESSES} guesses.`
+        : `You have ${state.guessesLeft} guess${state.guessesLeft === 1 ? '' : 'es'} left.`;
 
 const startPuzzle = (puzzle) => {
     state.puzzle = puzzle;
@@ -279,8 +332,9 @@ const resumeOrStart = () => {
         if (saved.gameOver) {
             endGame(state.guessesLeft > 0, { restoring: true });
         } else {
-            setResultMessage(`You have ${state.guessesLeft} guesses left.`);
+            setResultMessage(guessesLeftMessage());
             startTimer(saved.timeSpent || 0);
+            focusFirstOpenCell();
         }
         return;
     }
@@ -295,8 +349,9 @@ const resumeOrStart = () => {
     state.guessesLeft = TOTAL_GUESSES;
     state.guessHistory = {};
     drawPuzzle();
-    setResultMessage(`You have ${state.guessesLeft} guesses left.`);
+    setResultMessage(guessesLeftMessage());
     startTimer(0);
+    focusFirstOpenCell();
 };
 
 // Admin override: clear all saved data and start today's puzzle afresh.
@@ -309,10 +364,19 @@ window.__PSEUDOKU_ADMIN_RESET = () => {
 };
 
 const init = async () => {
-    setupTabs();
     setupStatsDialog(storage, () => state.puzzleDate || getPuzzleDate());
-    installPopoverDismiss();
+    const help = setupDialog($('help-modal'), $('help-button'), [$('help-close'), $('help-start')]);
+    keypad = setupKeypad({ getTarget: keypadTarget, getHistory: keypadHistory });
     $('check-button').addEventListener('click', checkSolution);
+
+    // First visit: show how to play once.
+    let seenHelp = true;
+    try { seenHelp = storage.getItem(HELP_SEEN_KEY) === '1'; } catch (e) { }
+    if (!seenHelp) {
+        try { storage.setItem(HELP_SEEN_KEY, '1'); } catch (e) { }
+        help.open(null);
+        $('help-modal').addEventListener('close', focusFirstOpenCell, { once: true });
+    }
 
     // Pause the clock and save when the page is hidden (switching tabs or
     // apps); on phones that's often the last chance before it is closed.

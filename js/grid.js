@@ -42,35 +42,32 @@ export const updateCellLabel = (cellDiv) => {
     }
 };
 
-// Draws a 6x6 grid: labels round the edge, 4x4 cells in the middle.
-// `createInput(row, col)` builds the input for each blank cell, and
-// `setupCell(cellDiv, popover, row, col)` adds per-cell behaviour.
+// Draws a 5x5 grid: column letters along the top, row numbers down the
+// left, 4x4 cells in the middle. `createInput(row, col)` builds the input
+// for each blank cell, and `setupCell(cellDiv, popover, row, col)` adds
+// per-cell behaviour.
 export const renderGrid = (displayGrid, { createInput, setupCell }) => {
     const container = document.getElementById('grid-cells');
     container.innerHTML = '';
 
-    const addColumnLabels = () => {
-        container.appendChild(document.createElement('div'));
-        COLUMN_LETTERS.forEach(letter => {
-            const label = document.createElement('div');
-            label.className = 'column-label';
-            label.setAttribute('aria-hidden', 'true');
-            label.textContent = letter;
-            container.appendChild(label);
-        });
-        container.appendChild(document.createElement('div'));
-    };
-    const addRowLabel = (row) => {
+    container.appendChild(document.createElement('div'));
+    COLUMN_LETTERS.forEach((letter, col) => {
         const label = document.createElement('div');
-        label.className = 'row-label';
+        label.className = 'column-label';
+        label.dataset.col = col;
         label.setAttribute('aria-hidden', 'true');
-        label.textContent = String(row + 1);
+        label.textContent = letter;
         container.appendChild(label);
-    };
+    });
 
-    addColumnLabels();
     displayGrid.forEach((rowValues, row) => {
-        addRowLabel(row);
+        const rowLabel = document.createElement('div');
+        rowLabel.className = 'row-label';
+        rowLabel.dataset.row = row;
+        rowLabel.setAttribute('aria-hidden', 'true');
+        rowLabel.textContent = String(row + 1);
+        container.appendChild(rowLabel);
+
         rowValues.forEach((value, col) => {
             const cellDiv = document.createElement('div');
             cellDiv.className = 'grid-cell';
@@ -99,54 +96,82 @@ export const renderGrid = (displayGrid, { createInput, setupCell }) => {
             container.appendChild(cellDiv);
             updateCellLabel(cellDiv);
         });
-        addRowLabel(row);
     });
-    addColumnLabels();
 };
 
-// IDs of the clue text cells, used for highlighting and as each input's
+// IDs of the clue text, used for highlighting and as each input's
 // description (so screen readers read a cell's two clues).
 export const clueId = (kind, index) => `clue-${kind}-${index}`;
 
 export const renderClues = (rowRules, colRules) => {
-    const fill = (tbodyId, kind, rules, name) => {
-        const tbody = document.getElementById(tbodyId);
-        tbody.innerHTML = '';
+    const fill = (listId, kind, rules, badge, name) => {
+        const list = document.getElementById(listId);
+        list.innerHTML = '';
         rules.forEach((rule, i) => {
-            const tr = document.createElement('tr');
-            tr.dataset.clue = `${kind}-${i}`;
-            const labelCell = document.createElement('th');
-            labelCell.scope = 'row';
-            labelCell.textContent = name(i);
-            const clueCell = document.createElement('td');
-            clueCell.id = clueId(kind, i);
-            clueCell.textContent = describeRule(rule);
-            tr.append(labelCell, clueCell);
-            tbody.appendChild(tr);
+            const li = document.createElement('li');
+            li.dataset.clue = `${kind}-${i}`;
+            const tag = document.createElement('span');
+            tag.className = 'clue-badge';
+            tag.textContent = badge(i);
+            const label = document.createElement('span');
+            label.className = 'sr-only';
+            label.textContent = `${name(i)}: `;
+            const text = document.createElement('span');
+            text.id = clueId(kind, i);
+            text.textContent = describeRule(rule);
+            li.append(tag, label, text);
+            list.appendChild(li);
         });
     };
-    fill('row-clues', 'row', rowRules, i => `Row ${i + 1}`);
-    fill('col-clues', 'col', colRules, i => `Column ${COLUMN_LETTERS[i]}`);
+    fill('row-clues', 'row', rowRules, i => String(i + 1), i => `Row ${i + 1}`);
+    fill('col-clues', 'col', colRules, i => COLUMN_LETTERS[i], i => `Column ${COLUMN_LETTERS[i]}`);
 };
 
-// Highlight the row and column clues for a cell, and show them in the strip
-// under the grid (small screens). Pass null to clear the highlight.
-export const highlightClues = (row, col) => {
-    document.querySelectorAll('tr.clue-active').forEach(tr => tr.classList.remove('clue-active'));
-    if (row === null) return;
-    document.querySelector(`tr[data-clue="row-${row}"]`)?.classList.add('clue-active');
-    document.querySelector(`tr[data-clue="col-${col}"]`)?.classList.add('clue-active');
+const ROW_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16M15 7l5 5-5 5"/></svg>';
+const COL_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M7 15l5 5 5-5"/></svg>';
 
+// Highlight the row and column for a cell: its clues in the list, its
+// labels, the other cells in line with it, and the two clue cards above
+// the grid. Pass null to clear the highlight. With `cards: false` the clue
+// cards are left alone (hover previews), so the grid never shifts under the
+// pointer.
+export const highlightClues = (row, col, { cards = true } = {}) => {
+    document.querySelectorAll('.clue-active, .label-active, .in-line')
+        .forEach(el => el.classList.remove('clue-active', 'label-active', 'in-line'));
     const strip = document.getElementById('active-clues');
-    const line = (label, id) => {
-        const p = document.createElement('div');
-        const strong = document.createElement('strong');
-        strong.textContent = `${label}: `;
-        p.append(strong, document.getElementById(id)?.textContent || '');
-        return p;
+    if (row === null) {
+        if (!cards) return;
+        strip.innerHTML = '<div class="active-clue-empty">Tap a cell to see its clues.</div>';
+        return;
+    }
+    document.querySelector(`li[data-clue="row-${row}"]`)?.classList.add('clue-active');
+    document.querySelector(`li[data-clue="col-${col}"]`)?.classList.add('clue-active');
+    document.querySelector(`.row-label[data-row="${row}"]`)?.classList.add('label-active');
+    document.querySelector(`.column-label[data-col="${col}"]`)?.classList.add('label-active');
+    allCells().forEach(cell => {
+        const r = Number(cell.dataset.row);
+        const c = Number(cell.dataset.col);
+        if ((r === row) !== (c === col)) cell.classList.add('in-line');
+    });
+    if (!cards) return;
+
+    const line = (label, icon, id) => {
+        const div = document.createElement('div');
+        div.className = 'active-clue';
+        const head = document.createElement('span');
+        head.className = 'active-clue-label';
+        head.innerHTML = icon;
+        head.append(label);
+        const text = document.createElement('span');
+        text.textContent = document.getElementById(id)?.textContent || '';
+        div.append(head, text);
+        return div;
     };
     strip.textContent = '';
-    strip.append(line(`Row ${row + 1}`, clueId('row', row)), line(`Column ${COLUMN_LETTERS[col]}`, clueId('col', col)));
+    strip.append(
+        line(String(row + 1), ROW_ICON, clueId('row', row)),
+        line(COLUMN_LETTERS[col], COL_ICON, clueId('col', col))
+    );
 };
 
 // The grid as numbers: input values for open cells, text for locked ones.
@@ -169,7 +194,7 @@ export const readCellStates = () => {
         const row = Number(cell.dataset.row);
         const col = Number(cell.dataset.col);
         states[row] = states[row] || [];
-        states[row][col] = cell.className.replace(/\bshake\b/, '').trim();
+        states[row][col] = cell.className.replace(/\b(shake|in-line|reveal-anim|duplicate)\b/g, '').replace(/\s+/g, ' ').trim();
     });
     return states;
 };
@@ -182,6 +207,16 @@ const lockCell = (cellDiv, value) => {
     cellDiv.querySelector('.grid-cell-content').textContent = value;
 };
 
+// Flip a cell's colour in, staggered across the grid in reading order.
+const flip = (cellDiv) => {
+    const order = Number(cellDiv.dataset.row) * 4 + Number(cellDiv.dataset.col);
+    cellDiv.style.setProperty('--delay', `${order * 40}ms`);
+    cellDiv.classList.remove('reveal-anim');
+    void cellDiv.offsetWidth; // restart the animation
+    cellDiv.classList.add('reveal-anim');
+    setTimeout(() => cellDiv.classList.remove('reveal-anim'), 1200);
+};
+
 // Colour each open cell by its guess: correct (locks it), hint (within 2) or incorrect.
 export const markGuesses = (answerGrid) => {
     editableInputs().forEach(input => {
@@ -192,6 +227,7 @@ export const markGuesses = (answerGrid) => {
         const cellDiv = input.closest('.grid-cell');
         cellDiv.classList.remove('correct', 'incorrect', 'hint');
         cellDiv.dataset.lastGuess = String(guess);
+        flip(cellDiv);
         if (guess === answer) {
             cellDiv.classList.add('correct');
             lockCell(cellDiv, answer);
@@ -210,6 +246,7 @@ export const revealAnswers = (answerGrid) => {
         const col = Number(input.dataset.col);
         const cellDiv = input.closest('.grid-cell');
         cellDiv.classList.add('revealed');
+        flip(cellDiv);
         lockCell(cellDiv, answerGrid[row][col]);
         updateCellLabel(cellDiv);
     });

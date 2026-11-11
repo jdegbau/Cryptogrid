@@ -20,9 +20,9 @@ Then open <http://localhost:8000>.
 |---|---|
 | `index.html`, `styles.css` | The page. All colours are CSS variables at the top of `styles.css`, with a dark theme that follows the system setting. |
 | `js/game.js` | Entry point: game state, submitting guesses, timer, saving, sharing |
-| `js/grid.js` | Draws the grid and clues, reads entries, marks guesses |
-| `js/input.js` | Cell inputs and the guess-history popover |
-| `js/ui.js` | Result line, toast, tabs, win/lose effects |
+| `js/grid.js` | Draws the grid and clues, highlights the selected row and column, reads entries, marks guesses |
+| `js/input.js` | Cell inputs, the on-screen number pad and the guess-history popover |
+| `js/ui.js` | Result line, toast, dialogs, win/lose effects |
 | `js/stats.js` | Stats dialog; loads Chart.js (pinned, with an integrity hash) on first open |
 | `js/date.js` | Today's puzzle, the countdown to the next one, time formatting |
 | `js/storage.js` | Saved game and stats history (localStorage) |

@@ -2,9 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex">
   <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f6f5fb" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f0e17" media="(prefers-color-scheme: dark)">
   <title>Pseudoku — Daily Logic Puzzle</title>
   <!-- Open Graph Meta Tags -->
   <meta property="og:title" content="Pseudoku — Daily Logic Puzzle">
@@ -21,116 +23,132 @@
   <link rel="preload" href="styles.css" as="style">
   <link rel="modulepreload" href="js/game.js">
   <link rel="stylesheet" href="styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 </head>
 <body>
-  <div class="container">
-    <header class="header">
-      <h1 class="title">Pseudoku</h1>
-      <div class="puzzle-info" id="puzzle-info"></div>
-      <div class="status">
-        <div class="timer" id="timer">Time: 0:00</div>
-        <div class="errors" id="errors">Guesses Remaining: </div>
+  <header class="app-bar">
+    <div class="app-bar-inner">
+      <h1 class="brand">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        Pseudoku
+      </h1>
+      <div class="app-bar-actions">
+        <button class="icon-button" id="help-button" aria-haspopup="dialog" aria-label="How to play">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.25"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1.1.9-1.1 1.6v.4"/><circle class="fill" cx="12" cy="16.9" r="1.05"/></svg>
+        </button>
+        <button class="icon-button" id="stats-button" aria-haspopup="dialog" aria-label="Your stats">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V5M19 20v-6"/></svg>
+        </button>
       </div>
-    </header>
-    <main class="main">
-            <section class="clues-section" id="clues-container">
-                <div class="tabs" role="tablist">
-                    <button class="tab-button active" id="clues-tab" role="tab" aria-selected="true" aria-controls="clues-panel">Clues</button>
-                    <button class="tab-button" id="rules-tab" role="tab" aria-selected="false" aria-controls="game-rules-container">How to Play</button>
-                </div>
-                <div class="content">
-                    <div id="clues-panel" role="tabpanel" aria-labelledby="clues-tab">
-                        <table class="clues-table">
-                            <caption class="sr-only">Row clues</caption>
-                            <thead>
-                                <tr>
-                                    <th scope="col">Row</th>
-                                    <th scope="col">Clue</th>
-                                </tr>
-                            </thead>
-                            <tbody id="row-clues">
-                                <!-- Row clues will be inserted here -->
-                            </tbody>
-                        </table>
-                        <table class="clues-table">
-                            <caption class="sr-only">Column clues</caption>
-                            <thead>
-                                <tr>
-                                    <th scope="col">Column</th>
-                                    <th scope="col">Clue</th>
-                                </tr>
-                            </thead>
-                            <tbody id="col-clues">
-                                <!-- Column clues will be inserted here -->
-                            </tbody>
-                        </table>
-                    </div>
-                    <section class="game-rules-section" id="game-rules-container" role="tabpanel" aria-labelledby="rules-tab" hidden>
-                        <div class="rules-content">
-                            <p>Fill in the grid with numbers 1 to 9.</p>
-                            <p>Use the provided clues to determine the correct numbers. You have five guesses.</p>
-                            <p>Row clues read left to right; column clues read top to bottom. Every puzzle has exactly one solution.</p>
-                            <p>Click the "Submit Guess" button when you think you've solved it.</p>
-                            <p>Cells will highlight based on your guess accuracy:</p>
-                            <div class="emoji-explanation">
-                                <span aria-hidden="true">🟦</span>
-                                <span>Pre-filled number</span>
-                            </div>
-                            <div class="emoji-explanation">
-                                <span aria-hidden="true">🟩 ✓</span>
-                                <span>Number is correct</span>
-                            </div>
-                            <div class="emoji-explanation">
-                                <span aria-hidden="true">🟥 ✗</span>
-                                <span>Number is incorrect</span>
-                            </div>
-                            <div class="emoji-explanation">
-                                <span aria-hidden="true">🟨 ≈</span>
-                                <span>Number is within 2 of the correct number</span>
-                            </div>
-                            <p class="difficulty-note">Puzzles get harder through the week: Monday is the easiest and Sunday the hardest.</p>
-                        </div>
-                    </section>
-                </div>
-            </section>
-            <section class="grid-section" id="grid-container">
-                <div id="grid-cells" class="grid-cells" role="group" aria-label="Puzzle grid">
-                    <!-- Labels and cells will be inserted here -->
-                </div>
-                <!-- Screen readers get these clues from each input's description -->
-                <p class="active-clues" id="active-clues" aria-hidden="true">Tap a cell to see its clues here.</p>
-                <section class="controls-section">
-                    <button class="button check-btn" id="check-button">Submit Guess</button>
-                    <button class="button share-btn" id="share-button" hidden>Share Your Score</button>
-                    <button class="button stats-btn" id="stats-button" aria-haspopup="dialog">📊 Stats</button>
-                    <p class="result" id="result" aria-live="polite"></p>
-                    <p class="countdown" id="countdown" hidden></p>
-                </section>
-            </section>
-        </main>
     </div>
+  </header>
 
-    <dialog id="stats-modal" class="stats-dialog" aria-labelledby="stats-title">
-      <button id="stats-close" class="stats-close" aria-label="Close stats">&times;</button>
-      <h2 id="stats-title">Your Pseudoku Stats</h2>
+  <main class="layout">
+    <section class="play" aria-label="Puzzle">
+      <div class="status-bar">
+        <div class="puzzle-info" id="puzzle-info"></div>
+        <div class="status-right">
+          <div class="guesses" id="errors"></div>
+          <div class="timer" id="timer" title="Time elapsed">0:00</div>
+        </div>
+      </div>
+
+      <!-- Screen readers get these clues from each input's description -->
+      <div class="active-clues" id="active-clues" aria-hidden="true">
+        <div class="active-clue-empty">Tap a cell to see its clues.</div>
+      </div>
+
+      <div class="board">
+        <div id="grid-cells" class="grid-cells" role="group" aria-label="Puzzle grid">
+          <!-- Labels and cells will be inserted here -->
+        </div>
+      </div>
+
+      <div class="keypad" id="keypad" role="group" aria-label="Number pad">
+        <!-- Keys are inserted by input.js -->
+      </div>
+
+      <div class="controls">
+        <button class="button primary" id="check-button">Submit guess</button>
+        <button class="button primary" id="share-button" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7.5 7.5 12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>
+          Share your score
+        </button>
+        <p class="result" id="result" aria-live="polite"></p>
+        <p class="countdown" id="countdown" hidden></p>
+      </div>
+    </section>
+
+    <aside class="clues-panel" aria-labelledby="clues-heading">
+      <h2 class="panel-title" id="clues-heading">All clues</h2>
+      <div class="clue-groups">
+        <div class="clue-group">
+          <h3>Rows <span>read left → right</span></h3>
+          <ul class="clue-list" id="row-clues"></ul>
+        </div>
+        <div class="clue-group">
+          <h3>Columns <span>read top → bottom</span></h3>
+          <ul class="clue-list" id="col-clues"></ul>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <dialog id="help-modal" class="sheet" aria-labelledby="help-title">
+    <div class="sheet-header">
+      <h2 id="help-title" tabindex="-1" autofocus>How to play</h2>
+      <button class="icon-button sheet-close" id="help-close" aria-label="Close how to play">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body rules">
+      <ol class="rule-steps">
+        <li>Fill every empty cell with a number from <strong>1 to 9</strong>. Numbers can repeat.</li>
+        <li>Each row and column must match its clue. Rows read left to right, columns top to bottom.</li>
+        <li>Submit when the grid is full. You have <strong>five guesses</strong>, and every puzzle has exactly one solution.</li>
+      </ol>
+      <h3>After each guess</h3>
+      <ul class="legend">
+        <li><span class="swatch swatch-correct" aria-hidden="true">✓</span><span><strong>Correct.</strong> The cell locks in.</span></li>
+        <li><span class="swatch swatch-hint" aria-hidden="true">≈</span><span><strong>Close.</strong> Within 2 of the answer.</span></li>
+        <li><span class="swatch swatch-incorrect" aria-hidden="true">✗</span><span><strong>Wrong.</strong> More than 2 away.</span></li>
+        <li><span class="swatch swatch-preset" aria-hidden="true">4</span><span><strong>Given.</strong> Pre-filled for you.</span></li>
+      </ul>
+      <p class="muted">The number pad shows what you've already tried in the selected cell. A new puzzle arrives every midnight (Chicago time), getting harder from Monday to Sunday.</p>
+      <button class="button primary" id="help-start">Let's play</button>
+    </div>
+  </dialog>
+
+  <dialog id="stats-modal" class="sheet" aria-labelledby="stats-title">
+    <div class="sheet-header">
+      <h2 id="stats-title" tabindex="-1" autofocus>Your stats</h2>
+      <button id="stats-close" class="icon-button sheet-close" aria-label="Close stats">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
       <dl id="stats-summary" class="stats-summary"></dl>
       <p id="stats-chart-status" class="stats-chart-status" aria-live="polite"></p>
       <div id="stats-charts" hidden>
         <div class="stats-chart stats-chart-pie">
           <canvas id="stats-win-chart" width="140" height="140" role="img" aria-label="Wins and losses"></canvas>
         </div>
+        <h3 class="chart-title">Guesses used</h3>
         <div class="stats-chart">
-          <canvas id="stats-guess-chart" height="80" role="img" aria-label="Guesses used per game"></canvas>
+          <canvas id="stats-guess-chart" height="110" role="img" aria-label="Guesses used per game"></canvas>
         </div>
+        <h3 class="chart-title">Time per game (seconds)</h3>
         <div class="stats-chart">
-          <canvas id="stats-time-chart" height="80" role="img" aria-label="Time spent per game"></canvas>
+          <canvas id="stats-time-chart" height="110" role="img" aria-label="Time spent per game"></canvas>
         </div>
       </div>
-    </dialog>
+    </div>
+  </dialog>
 
-    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <script type="module" src="js/game.js"></script>
+  <script type="module" src="js/game.js"></script>
 </body>
 </html>
