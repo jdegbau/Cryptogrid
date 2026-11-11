@@ -57,6 +57,9 @@
         Pseudoku
       </h1>
       <div class="app-bar-actions">
+        <button class="icon-button" id="clues-button" aria-haspopup="dialog" aria-label="All clues">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle class="fill" cx="4.5" cy="6" r="1.25"/><circle class="fill" cx="4.5" cy="12" r="1.25"/><circle class="fill" cx="4.5" cy="18" r="1.25"/></svg>
+        </button>
         <button class="icon-button" id="help-button" aria-haspopup="dialog" aria-label="How to play">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.25"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1.1.9-1.1 1.6v.4"/><circle class="fill" cx="12" cy="16.9" r="1.05"/></svg>
         </button>
@@ -120,6 +123,17 @@
       </div>
     </aside>
   </main>
+
+  <!-- On phones the clue list moves in here while it is open -->
+  <dialog id="clues-modal" class="sheet" aria-labelledby="clues-sheet-title">
+    <div class="sheet-header">
+      <h2 id="clues-sheet-title" tabindex="-1" autofocus>All clues</h2>
+      <button class="icon-button sheet-close" id="clues-close" aria-label="Close all clues">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body" id="clues-sheet-body"></div>
+  </dialog>
 
   <dialog id="help-modal" class="sheet" aria-labelledby="help-title">
     <div class="sheet-header">

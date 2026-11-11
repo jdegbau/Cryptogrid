@@ -365,10 +365,22 @@ if (isLocal) window.__PSEUDOKU_ADMIN_RESET = () => {
 
 let settings = null;
 
+// On phones the "All clues" panel would push the page past one screen, so
+// it is hidden there and opened as a sheet instead. The clue list moves into
+// the sheet while it is open and back afterwards, so highlighting still works.
+const setupCluesSheet = () => {
+    const dialog = $('clues-modal');
+    const groups = document.querySelector('.clues-panel .clue-groups');
+    const panel = groups.parentElement;
+    setupDialog(dialog, $('clues-button'), [$('clues-close')], () => $('clues-sheet-body').append(groups));
+    dialog.addEventListener('close', () => panel.append(groups));
+};
+
 const init = async () => {
     settings = setupSettingsDialog(storage, setupDialog);
     setupStatsDialog(storage, () => state.puzzleDate || getPuzzleDate());
     const help = setupDialog($('help-modal'), $('help-button'), [$('help-close'), $('help-start')]);
+    setupCluesSheet();
     keypad = setupKeypad({ getTarget: keypadTarget, getHistory: keypadHistory });
     $('check-button').addEventListener('click', checkSolution);
 
