@@ -1,16 +1,18 @@
-// Small page-level UI pieces: result line, toast, tabs and end-game effects.
+// Small page-level UI pieces: result line, toast, dialogs and end-game effects.
 
 export const prefersReducedMotion = () =>
     window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export const setResultMessage = (message) => {
     const result = document.getElementById('result');
+    result.classList.remove('result-end');
     result.textContent = message;
 };
 
 // Result line with a leading emoji; `animation` is 'win', 'lose' or null.
 export const setEndResult = (message, signifier, animation) => {
     const result = document.getElementById('result');
+    result.classList.add('result-end');
     result.textContent = '';
     const icon = document.createElement('span');
     icon.className = 'result-signifier';
@@ -31,38 +33,40 @@ export const showToast = (message, duration = 2500) => {
     toastTimer = setTimeout(() => toast.classList.remove('visible'), duration);
 };
 
+// One dot per guess; used guesses fade out.
 export const updateGuessIcons = (guessesLeft, totalGuesses) => {
-    const numberEmojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣'];
     const used = totalGuesses - guessesLeft;
-    const errors = document.getElementById('errors');
-    errors.textContent = 'Guesses: ';
+    const guesses = document.getElementById('errors');
+    guesses.textContent = '';
     for (let i = 0; i < totalGuesses; i++) {
-        const icon = document.createElement('span');
-        icon.className = 'guess-icon';
-        icon.setAttribute('aria-hidden', 'true');
-        icon.textContent = i < used ? '❌' : numberEmojis[i];
-        errors.appendChild(icon);
+        const pip = document.createElement('span');
+        pip.className = i < used ? 'guess-pip used' : 'guess-pip';
+        pip.setAttribute('aria-hidden', 'true');
+        guesses.appendChild(pip);
     }
     const label = document.createElement('span');
     label.className = 'sr-only';
-    label.textContent = `${guessesLeft} of ${totalGuesses} remaining`;
-    errors.appendChild(label);
+    label.textContent = `${guessesLeft} of ${totalGuesses} guesses left`;
+    guesses.appendChild(label);
+    guesses.title = `${guessesLeft} of ${totalGuesses} guesses left`;
 };
 
-export const setupTabs = () => {
-    const tabs = [
-        { button: document.getElementById('clues-tab'), panel: document.getElementById('clues-panel') },
-        { button: document.getElementById('rules-tab'), panel: document.getElementById('game-rules-container') }
-    ];
-    const select = (active) => {
-        tabs.forEach(({ button, panel }) => {
-            const on = button === active.button;
-            button.classList.toggle('active', on);
-            button.setAttribute('aria-selected', String(on));
-            panel.hidden = !on;
-        });
+// Wire up a <dialog>: open from `openButton`, close from the close button,
+// a tap on the backdrop, or Escape; focus goes back to the opener.
+export const setupDialog = (dialog, openButton, closeButtons, onOpen) => {
+    let opener = null;
+    const open = (from = openButton) => {
+        opener = from;
+        dialog.showModal();
+        onOpen?.();
     };
-    tabs.forEach(tab => tab.button.addEventListener('click', () => select(tab)));
+    openButton?.addEventListener('click', () => open(openButton));
+    closeButtons.forEach(btn => btn.addEventListener('click', () => dialog.close()));
+    dialog.addEventListener('click', (e) => {
+        if (e.target === dialog) dialog.close();
+    });
+    dialog.addEventListener('close', () => opener?.focus?.());
+    return { open };
 };
 
 const removeAfter = (el, ms) => setTimeout(() => el.remove(), ms);

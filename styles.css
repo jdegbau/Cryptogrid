@@ -1,112 +1,120 @@
 /* ==========================================================================
-   Colours. Every colour lives here; the dark theme follows the system
+   Design tokens. Every colour lives here; the dark theme follows the system
    setting. Text/background pairs meet WCAG AA (4.5:1) in both themes.
    ========================================================================== */
 :root {
     color-scheme: light;
 
-    --bg: #f0f0f0;
+    --font: 'Outfit', ui-rounded, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+    --bg: #f6f5fb;
     --surface: #ffffff;
-    --surface-alt: #e8eaf6;      /* main play area */
-    --text: #333333;
-    --text-muted: #666666;
-    --border: #dddddd;
-    --row-alt: #f0f0f0;
-    --shadow: rgba(0, 0, 0, 0.1);
+    --surface-2: #f0eef8;
+    --text: #1c1a29;
+    --text-muted: #625f78;
+    --border: #e3e0ee;
+    --border-strong: #cfcae3;
+    --shadow-sm: 0 1px 2px rgba(28, 26, 41, 0.06), 0 1px 3px rgba(28, 26, 41, 0.05);
+    --shadow-md: 0 6px 24px rgba(28, 26, 41, 0.08), 0 2px 6px rgba(28, 26, 41, 0.05);
+    --shadow-lg: 0 24px 60px rgba(28, 26, 41, 0.22);
 
-    --primary: #6200ea;
-    --primary-strong: #3700b3;
+    --accent: #6236e8;           /* text, rings, highlights */
+    --accent-soft: #eee8ff;
+    --accent-line: #f6f3ff;      /* the selected cell's row and column */
+    --primary-bg: #6236e8;       /* filled buttons */
+    --primary-bg-hover: #5227d4;
     --on-primary: #ffffff;
-    --header-bg: #6200ea;
-    --tab-bg: #f0f0f0;
-    --tab-hover: #e0e0e0;
-    --button-disabled-bg: #cccccc;
-    --button-disabled-text: #666666;
+    --button-disabled-bg: #e3e0ee;
+    --button-disabled-text: #625f78;
 
-    --cell-bg: #bbdefb;
-    --cell-text: #6200ea;
-    --label-text: #6200ea;
-    --preset-bg: #80d8ff;
-    --preset-text: #01579b;
-    --correct-bg: #c8e6c9;
-    --correct-text: #1b5e20;
-    --incorrect-bg: #ffcdd2;
-    --incorrect-text: #b71c1c;
-    --hint-bg: #ffeb3b;
-    --hint-text: #6b4400;
-    --revealed-bg: #ffcc80;
-    --revealed-text: #9a2a00;
+    --cell-bg: #ffffff;
+    --cell-text: #1c1a29;
+    --preset-bg: #ebe6fb;
+    --preset-text: #4b2bb0;
+    --correct-bg: #d9f4e1;
+    --correct-text: #11612f;
+    --incorrect-bg: #fde3e1;
+    --incorrect-text: #a8231b;
+    --hint-bg: #fff0bd;
+    --hint-text: #6e4a00;
+    --revealed-bg: #ffe5cf;
+    --revealed-text: #8f3700;
 
-    --focus-ring: #6200ea;
+    --focus-ring: #6236e8;
     --error-bg: #c62828;
     --error-text: #ffffff;
-    --clue-active-bg: #fff3c4;
 
     --popover-bg: #ffffff;
-    --popover-border: #bbbbbb;
-    --chip-bg: #e8eaf6;
-    --chip-text: #6200ea;
-    --chip-border: #bdbdbd;
+    --chip-bg: #f0eef8;
+    --chip-text: #4b2bb0;
 
-    --toast-bg: #333333;
+    --toast-bg: #1c1a29;
     --toast-text: #ffffff;
-    --backdrop: rgba(0, 0, 0, 0.7);
+    --backdrop: rgba(18, 16, 30, 0.55);
+
+    --radius-sm: 10px;
+    --radius: 14px;
+    --radius-lg: 22px;
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
         color-scheme: dark;
 
-        --bg: #121212;
-        --surface: #1e1e2a;
-        --surface-alt: #181826;
-        --text: #e6e6eb;
-        --text-muted: #a6a6b4;
-        --border: #33334a;
-        --row-alt: #24243a;
-        --shadow: rgba(0, 0, 0, 0.5);
+        --bg: #0f0e17;
+        --surface: #1a1926;
+        --surface-2: #24222f;
+        --text: #ecebf5;
+        --text-muted: #a5a2b9;
+        --border: #2e2b3e;
+        --border-strong: #423e57;
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+        --shadow-md: 0 8px 28px rgba(0, 0, 0, 0.45);
+        --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.6);
 
-        --primary: #5b2bd6;
-        --primary-strong: #7c4dff;
+        --accent: #a995ff;
+        --accent-soft: #2b2547;
+        --accent-line: #201e30;
+        --primary-bg: #6a48ee;
+        --primary-bg-hover: #7a5cf5;
         --on-primary: #ffffff;
-        --header-bg: #3d1a99;
-        --tab-bg: #26263a;
-        --tab-hover: #30304a;
-        --button-disabled-bg: #3a3a4a;
-        --button-disabled-text: #a6a6b4;
+        --button-disabled-bg: #2e2b3e;
+        --button-disabled-text: #a5a2b9;
 
-        --cell-bg: #26324a;
-        --cell-text: #d6c8ff;
-        --label-text: #b39dff;
-        --preset-bg: #0d3b5c;
-        --preset-text: #a8e1ff;
-        --correct-bg: #1b3d20;
-        --correct-text: #a5d6a7;
-        --incorrect-bg: #4a1c1f;
-        --incorrect-text: #ffabab;
-        --hint-bg: #4a3c00;
-        --hint-text: #ffe27a;
-        --revealed-bg: #4d2a00;
-        --revealed-text: #ffbf80;
+        --cell-bg: #1f1d2c;
+        --cell-text: #ecebf5;
+        --preset-bg: #2b2547;
+        --preset-text: #cfc4ff;
+        --correct-bg: #133823;
+        --correct-text: #8fe3aa;
+        --incorrect-bg: #461b1c;
+        --incorrect-text: #ffaaa4;
+        --hint-bg: #43360a;
+        --hint-text: #ffdf7a;
+        --revealed-bg: #46290c;
+        --revealed-text: #ffbf86;
 
-        --focus-ring: #b39dff;
-        --clue-active-bg: #4a3c00;
+        --focus-ring: #a995ff;
 
-        --popover-bg: #26263a;
-        --popover-border: #44445a;
-        --chip-bg: #2a2a40;
-        --chip-text: #d6c8ff;
-        --chip-border: #55556a;
+        --popover-bg: #24222f;
+        --chip-bg: #2e2b3e;
+        --chip-text: #cfc4ff;
 
-        --toast-bg: #e6e6eb;
-        --toast-text: #121212;
-        --backdrop: rgba(0, 0, 0, 0.8);
+        --toast-bg: #ecebf5;
+        --toast-text: #0f0e17;
+        --backdrop: rgba(0, 0, 0, 0.7);
     }
 }
 
 /* ==========================================================================
-   Utilities
+   Base
    ========================================================================== */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
 [hidden] {
     display: none !important;
 }
@@ -123,285 +131,414 @@
     border: 0;
 }
 
-/* ==========================================================================
-   Page layout
-   ========================================================================== */
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
 body {
-    font-family: 'Nunito', sans-serif;
-    background: var(--bg);
     margin: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     min-height: 100vh;
+    min-height: 100dvh;
+    font-family: var(--font);
+    font-size: 16px;
+    line-height: 1.45;
+    background: var(--bg);
     color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 90%;
-    max-width: 1000px;
-    background: var(--surface);
-    border-radius: 10px;
-    box-shadow: 0 5px 15px var(--shadow);
-    overflow: hidden;
+button {
+    font: inherit;
+    color: inherit;
 }
 
-.header {
-    width: 100%;
-    box-sizing: border-box;
-    background: var(--header-bg);
-    color: var(--on-primary);
-    padding: 20px;
-    text-align: center;
+svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex: none;
 }
 
-.header .title {
-    margin: 0;
-    font-size: 2rem;
-    font-weight: 700;
+svg .fill {
+    fill: currentColor;
+    stroke: none;
 }
 
-.puzzle-info {
-    margin-top: 4px;
-    font-size: 0.95rem;
-    opacity: 0.9;
+:focus-visible {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 2px;
 }
 
-.header .status {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 8px 20px;
-    margin-top: 10px;
-}
-
-.header .timer,
-.header .errors {
-    font-size: 1rem;
-}
-
-.guess-icon {
-    margin: 0 2px;
-}
-
-.main {
-    display: flex;
-    width: 100%;
-    box-sizing: border-box;
-    padding: 20px;
-    background: var(--surface-alt);
-    flex-wrap: nowrap;
-    align-items: flex-start;
+.muted {
+    color: var(--text-muted);
 }
 
 /* ==========================================================================
-   Clues and rules
+   App bar
    ========================================================================== */
-.clues-section {
-    width: 30%;
-    background: var(--surface);
-    border-radius: 5px;
-    box-shadow: 0 2px 5px var(--shadow);
-    min-height: 500px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.content {
-    width: 100%;
-}
-
-.tabs {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-}
-
-.tab-button {
-    background: var(--tab-bg);
-    color: var(--text);
-    border: none;
-    padding: 10px;
-    cursor: pointer;
-    transition: background 0.3s;
-    font-size: 1rem;
-    font-family: inherit;
-    width: 50%;
-    border-bottom: 2px solid var(--primary);
-}
-
-.tab-button:hover {
-    background: var(--tab-hover);
-}
-
-.tab-button.active {
-    background: var(--primary);
-    color: var(--on-primary);
-    border-bottom: none;
-}
-
-.tab-button:focus-visible {
-    outline: 3px solid var(--focus-ring);
-    outline-offset: -3px;
-}
-
-.clues-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.75rem;
-}
-
-.clues-table th,
-.clues-table td {
-    padding: 10px;
-    text-align: center;
+.app-bar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    padding-top: env(safe-area-inset-top);
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    -webkit-backdrop-filter: saturate(1.4) blur(12px);
+    backdrop-filter: saturate(1.4) blur(12px);
     border-bottom: 1px solid var(--border);
 }
 
-.clues-table thead th {
-    background: var(--primary);
-    color: var(--on-primary);
-    text-transform: uppercase;
-    font-size: 1rem;
-}
-
-.clues-table tbody th {
-    font-weight: 400;
-}
-
-.clues-table tbody tr:nth-child(even) {
-    background: var(--row-alt);
-}
-
-/* The row and column clues for the cell in focus (or under the pointer) */
-.clues-table tbody tr.clue-active {
-    background: var(--clue-active-bg);
-    box-shadow: inset 4px 0 0 var(--primary);
-    font-weight: 700;
-}
-
-.game-rules-section {
-    padding: 0 20px;
-}
-
-.rules-content {
-    text-align: left;
-    font-size: 1rem;
-}
-
-.rules-content p {
-    margin: 10px 0;
-}
-
-.rules-content .emoji-explanation {
+.app-bar-inner {
     display: flex;
     align-items: center;
-    margin: 5px 0;
+    justify-content: space-between;
+    max-width: 1040px;
+    height: 56px;
+    margin: 0 auto;
+    padding: 0 max(12px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
 }
 
-.rules-content .emoji-explanation span {
-    margin-left: 10px;
-    font-size: 1rem;
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
 }
 
-.rules-content .difficulty-note {
+.brand-mark {
+    display: grid;
+    grid-template-columns: repeat(2, 9px);
+    gap: 2px;
+}
+
+.brand-mark i {
+    width: 9px;
+    height: 9px;
+    border-radius: 3px;
+    background: var(--accent);
+}
+
+.brand-mark i:nth-child(2) { background: var(--correct-text); }
+.brand-mark i:nth-child(3) { background: var(--hint-text); opacity: 0.85; }
+.brand-mark i:nth-child(4) { opacity: 0.45; }
+
+.app-bar-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+@media (hover: hover) {
+    .icon-button:hover {
+        background: var(--surface-2);
+    }
+}
+
+.icon-button:active {
+    background: var(--border);
+}
+
+/* ==========================================================================
+   Layout
+   ========================================================================== */
+.layout {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 12px max(16px, env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    display: grid;
+    gap: 20px;
+}
+
+.play {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    width: 100%;
+    max-width: 440px;
+    margin: 0 auto;
+}
+
+@media (min-width: 860px) {
+    .layout {
+        grid-template-columns: minmax(0, 460px) minmax(0, 1fr);
+        align-items: start;
+        gap: 32px;
+        padding-top: 28px;
+    }
+
+    .play {
+        margin: 0;
+    }
+
+    .clues-panel {
+        position: sticky;
+        top: 84px;
+    }
+}
+
+/* ==========================================================================
+   Status bar: puzzle, guesses left, timer
+   ========================================================================== */
+.status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 32px;
+}
+
+.puzzle-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    white-space: nowrap;
+}
+
+.difficulty {
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.status-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.guesses {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.guess-pip {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    transition: background 0.3s, transform 0.3s;
+}
+
+.guess-pip.used {
+    background: var(--border-strong);
+    transform: scale(0.8);
+}
+
+.timer {
+    min-width: 3.2em;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   Clues for the selected cell
+   ========================================================================== */
+.active-clues {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 76px;
+    padding: 6px 14px;
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+}
+
+.active-clue {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 5px 0;
+    font-size: 0.95rem;
+    line-height: 1.3;
+}
+
+.active-clue + .active-clue {
+    border-top: 1px solid var(--border);
+}
+
+.active-clue-empty {
+    text-align: center;
     color: var(--text-muted);
+}
+
+.active-clue-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    flex: none;
+    min-width: 42px;
+    padding: 1px 6px;
+    border-radius: 6px;
+    background: var(--accent-soft);
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.active-clue-label svg {
+    width: 13px;
+    height: 13px;
+    stroke-width: 2.5;
 }
 
 /* ==========================================================================
    Grid
    ========================================================================== */
-.grid-section {
-    width: 70%;
+.board {
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    justify-content: center;
 }
 
 .grid-cells {
+    /* As big as the width allows, but small enough on short phones that
+       the grid, number pad and submit button fit on one screen. */
+    --chrome: 440px;
+    --cell: clamp(48px, min(calc((100vw - 86px) / 4), calc((100vh - var(--chrome)) / 4)), 92px);
+    --cell: clamp(48px, min(calc((100vw - 86px) / 4), calc((100dvh - var(--chrome)) / 4)), 92px);
     display: grid;
-    grid-template-columns: auto repeat(4, minmax(75px, 1fr)) auto;
-    grid-template-rows: auto repeat(4, minmax(75px, 1fr)) auto;
+    grid-template-columns: 22px repeat(4, var(--cell));
+    grid-template-rows: 22px repeat(4, var(--cell));
     gap: 8px;
 }
 
-.grid-cell,
 .row-label,
 .column-label {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
-    color: var(--label-text);
-    padding: 2px;
-    margin: 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    border-radius: 6px;
+    transition: color 0.15s, background 0.15s;
+}
+
+.row-label.label-active,
+.column-label.label-active {
+    color: var(--accent);
+    background: var(--accent-soft);
 }
 
 .grid-cell {
     position: relative;
-    width: 100%;
-    padding-top: 100%;
+    border-radius: var(--radius);
     background: var(--cell-bg);
     color: var(--cell-text);
-    border-radius: 5px;
-    outline: 2px solid transparent;
-    transition: background 0.3s, transform 0.3s;
+    box-shadow: inset 0 0 0 1.5px var(--border-strong);
+    transition: background 0.2s, box-shadow 0.15s, transform 0.15s;
 }
 
-/* Keyboard focus: a ring round the cell whose input has focus */
+.grid-cell.in-line {
+    background: var(--accent-line);
+}
+
+/* The selected cell */
 .grid-cell:focus-within {
-    box-shadow: 0 0 0 3px var(--surface-alt), 0 0 0 6px var(--focus-ring);
+    box-shadow: inset 0 0 0 2.5px var(--accent), 0 0 0 4px var(--accent-soft);
     z-index: 2;
 }
 
 /* Repeated guess */
 .grid-cell.duplicate {
-    outline-color: var(--error-bg);
+    box-shadow: inset 0 0 0 2.5px var(--error-bg);
 }
 
 .duplicate-message {
     position: absolute;
-    top: 100%;
+    top: calc(100% + 4px);
     left: 50%;
     transform: translateX(-50%);
     background: var(--error-bg);
     color: var(--error-text);
-    padding: 2px 5px;
+    padding: 3px 8px;
     font-size: 0.75rem;
-    border-radius: 3px;
+    font-weight: 600;
+    border-radius: 6px;
     white-space: nowrap;
-    z-index: 3;
+    z-index: 5;
     pointer-events: none;
 }
 
 .grid-cell-content {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2.5rem;
+    font-size: calc(var(--cell) * 0.46);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
     border-radius: inherit;
 }
 
 .grid-cell input {
     width: 100%;
     height: 100%;
-    font-size: 2.5rem;
-    font-family: inherit;
+    padding: 0;
+    font: inherit;
     color: inherit;
     border: none;
     background: transparent;
     text-align: center;
     outline: none; /* the cell's :focus-within ring replaces it */
-    box-sizing: border-box;
+    caret-color: transparent;
+    cursor: pointer;
+    border-radius: inherit;
+}
+
+.grid-cell input::selection {
+    background: transparent;
+}
+
+.grid-cell input:disabled {
+    opacity: 1;
+    -webkit-text-fill-color: currentColor;
+    cursor: default;
+}
+
+.grid-cell.preset,
+.grid-cell.correct,
+.grid-cell.incorrect,
+.grid-cell.hint,
+.grid-cell.revealed {
+    box-shadow: none;
 }
 
 .grid-cell.preset .grid-cell-content { background: var(--preset-bg); color: var(--preset-text); }
@@ -410,15 +547,20 @@ body {
 .grid-cell.hint .grid-cell-content { background: var(--hint-bg); color: var(--hint-text); }
 .grid-cell.revealed .grid-cell-content { background: var(--revealed-bg); color: var(--revealed-text); }
 
+.grid-cell.incorrect:focus-within,
+.grid-cell.hint:focus-within {
+    box-shadow: inset 0 0 0 2.5px var(--accent), 0 0 0 4px var(--accent-soft);
+}
+
 /* Status symbols, so feedback doesn't rely on colour alone.
    The "/ ''" gives the symbol empty alt text; the cell label says it. */
 .grid-cell.correct::after,
 .grid-cell.incorrect::after,
 .grid-cell.hint::after {
     position: absolute;
-    top: 4px;
-    right: 6px;
-    font-size: 1rem;
+    top: 5px;
+    right: 7px;
+    font-size: 0.8rem;
     font-weight: 700;
     line-height: 1;
     pointer-events: none;
@@ -428,79 +570,59 @@ body {
 .grid-cell.incorrect::after { content: "✗"; content: "✗" / ""; color: var(--incorrect-text); }
 .grid-cell.hint::after { content: "≈"; content: "≈" / ""; color: var(--hint-text); }
 
-/* Clues for the active cell, under the grid on small screens */
-.active-clues {
-    display: none;
-    margin: 12px 0 0;
-    padding: 8px 12px;
-    max-width: 360px;
-    background: var(--surface);
-    border-left: 4px solid var(--primary);
-    border-radius: 4px;
-    font-size: 0.9rem;
-    line-height: 1.4;
+/* A guess lands: cells flip in, one after another */
+.grid-cell.reveal-anim .grid-cell-content {
+    animation: cell-flip 0.45s cubic-bezier(.3,.7,.4,1) both;
+    animation-delay: var(--delay, 0s);
 }
 
-.active-clues strong {
-    color: var(--label-text);
+@keyframes cell-flip {
+    0% { transform: rotateX(90deg); }
+    100% { transform: rotateX(0); }
 }
 
-/* Guess-history popover */
+/* Guess-history popover (pointer devices; touch uses the number pad) */
 .guess-history-popover {
     position: absolute;
-    bottom: 110%;
+    bottom: calc(100% + 8px);
     left: 50%;
     transform: translateX(-50%);
     background: var(--popover-bg);
-    border: 1px solid var(--popover-border);
-    border-radius: 8px;
-    box-shadow: 0 2px 8px var(--shadow);
-    padding: 6px 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md);
+    padding: 8px 10px;
     z-index: 10;
-    min-width: 60px;
-    max-width: 120px;
-    font-size: 1.1rem;
-    justify-content: center;
-    align-items: center;
+    min-width: 64px;
+    font-size: 0.9rem;
+    text-align: center;
     pointer-events: none;
+    white-space: nowrap;
 }
 
 .chips-two-column {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px 8px;
-    width: 100%;
-    align-items: center;
-    justify-items: center;
+    display: flex;
+    gap: 6px;
 }
 
 .guess-chip {
-    background: var(--chip-bg);
-    color: var(--chip-text);
-    border-radius: 50%;
-    width: 2em;
-    height: 2em;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: bold;
-    font-size: 1.1em;
-    box-shadow: 0 1px 2px var(--shadow);
-    border: 1px solid var(--chip-border);
+    width: 1.9em;
+    height: 1.9em;
+    border-radius: 8px;
+    background: var(--chip-bg);
+    color: var(--chip-text);
+    font-weight: 700;
 }
 
-/* Shape cues alongside colour: correct = thick ring, close = dashed ring,
-   wrong = struck through. */
-.chip-correct { background: var(--correct-bg); color: var(--correct-text); border: 3px solid var(--correct-text); }
-.chip-hint { background: var(--hint-bg); color: var(--hint-text); border: 2px dashed var(--hint-text); }
-.chip-incorrect { background: var(--incorrect-bg); color: var(--incorrect-text); border-color: var(--incorrect-text); text-decoration: line-through; }
+/* Shape cues alongside colour: close = dashed ring, wrong = struck through. */
+.chip-correct { background: var(--correct-bg); color: var(--correct-text); box-shadow: inset 0 0 0 2px var(--correct-text); }
+.chip-hint { background: var(--hint-bg); color: var(--hint-text); outline: 2px dashed var(--hint-text); outline-offset: -2px; }
+.chip-incorrect { background: var(--incorrect-bg); color: var(--incorrect-text); text-decoration: line-through; }
 
 .guess-history-empty {
     color: var(--text-muted);
-    font-size: 0.95em;
 }
 
 /* Shake for refused submits */
@@ -511,69 +633,182 @@ body {
 @keyframes shake {
     10%, 90% { transform: translateX(-2px); }
     20%, 80% { transform: translateX(4px); }
-    30%, 50%, 70% { transform: translateX(-8px); }
-    40%, 60% { transform: translateX(8px); }
+    30%, 50%, 70% { transform: translateX(-6px); }
+    40%, 60% { transform: translateX(6px); }
     100% { transform: translateX(0); }
 }
 
 /* ==========================================================================
-   Controls
+   Number pad
    ========================================================================== */
-.controls-section {
+.keypad {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.key {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 54px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow-sm), inset 0 -2px 0 var(--border);
+    font-size: 1.4rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: background 0.12s, transform 0.08s;
+}
+
+@media (hover: hover) {
+    .key:hover {
+        background: var(--surface-2);
+    }
+}
+
+.key:active {
+    transform: translateY(1px) scale(0.97);
+    box-shadow: var(--shadow-sm);
+}
+
+.key-erase {
+    color: var(--text-muted);
+}
+
+/* Already tried in the selected cell */
+.key.key-incorrect {
+    background: var(--incorrect-bg);
+    color: var(--incorrect-text);
+    box-shadow: none;
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+    opacity: 0.8;
+}
+
+.key.key-hint {
+    background: var(--hint-bg);
+    color: var(--hint-text);
+    box-shadow: inset 0 0 0 2px var(--hint-text);
+    opacity: 0.85;
+}
+
+.key.key-hint::after {
+    content: "≈";
+    content: "≈" / "";
+    position: absolute;
+    top: 3px;
+    right: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.keypad.inactive .key {
+    opacity: 0.45;
+    cursor: default;
+}
+
+/* ==========================================================================
+   Buttons, result and countdown
+   ========================================================================== */
+.controls {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    margin-top: 20px;
+    align-items: stretch;
+    gap: 6px;
+    margin-top: 4px;
 }
 
 .button {
-    padding: 10px 20px;
-    background: var(--primary);
-    color: var(--on-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 52px;
+    padding: 12px 22px;
     border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background 0.3s, transform 0.3s, box-shadow 0.3s;
-    font-size: 1rem;
-    font-family: inherit;
+    border-radius: var(--radius);
+    background: var(--surface-2);
+    color: var(--text);
+    font-size: 1.05rem;
     font-weight: 600;
-    margin: 10px 0;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
 }
 
-.button:hover {
-    background: var(--primary-strong);
-    box-shadow: 0 4px 8px var(--shadow);
-    transform: scale(1.05);
+.button.primary {
+    background: var(--primary-bg);
+    color: var(--on-primary);
+    box-shadow: 0 6px 18px color-mix(in srgb, var(--primary-bg) 32%, transparent);
+}
+
+@media (hover: hover) {
+    .button.primary:hover {
+        background: var(--primary-bg-hover);
+    }
 }
 
 .button:active {
-    background: var(--primary);
-    transform: scale(1);
-    box-shadow: none;
+    transform: scale(0.985);
 }
 
-.button:focus-visible {
-    outline: 3px solid var(--focus-ring);
-    outline-offset: 3px;
-}
-
-.button:disabled {
+.button:disabled,
+.button.primary:disabled {
     background: var(--button-disabled-bg);
     color: var(--button-disabled-text);
+    box-shadow: none;
     cursor: not-allowed;
     transform: none;
-    box-shadow: none;
+}
+
+.button svg {
+    width: 20px;
+    height: 20px;
+}
+
+.button.glow {
+    animation: glow 1.6s ease-in-out 3;
+}
+
+@keyframes glow {
+    50% { box-shadow: 0 0 0 6px var(--accent-soft), 0 6px 18px color-mix(in srgb, var(--primary-bg) 40%, transparent); }
 }
 
 .result {
-    margin-top: 15px;
-    font-size: 1rem;
+    min-height: 1.45em;
+    margin: 4px 0 0;
+    font-size: 0.98rem;
     text-align: center;
+    color: var(--text-muted);
+}
+
+.result.result-end {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    margin-top: 10px;
+    padding: 16px;
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+    color: var(--text);
+    font-weight: 600;
+    font-size: 1.05rem;
 }
 
 .countdown {
     margin: 4px 0 0;
-    font-size: 1rem;
     text-align: center;
     color: var(--text-muted);
     font-variant-numeric: tabular-nums;
@@ -583,13 +818,333 @@ body {
     color: var(--text);
 }
 
+.countdown .button {
+    width: 100%;
+}
+
+/* ==========================================================================
+   All clues
+   ========================================================================== */
+.clues-panel {
+    width: 100%;
+    max-width: 440px;
+    margin: 0 auto;
+    padding: 18px;
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+}
+
+@media (min-width: 860px) {
+    .clues-panel {
+        max-width: none;
+        padding: 24px;
+    }
+}
+
+.panel-title {
+    margin: 0 0 12px;
+    font-size: 1.1rem;
+    letter-spacing: -0.01em;
+}
+
+.clue-groups {
+    display: grid;
+    gap: 18px;
+}
+
+.clue-group h3 {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 0 0 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+}
+
+.clue-group h3 span {
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.clue-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 4px;
+}
+
+.clue-list li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    line-height: 1.3;
+    transition: background 0.15s;
+}
+
+.clue-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 700;
+    transition: background 0.15s, color 0.15s;
+}
+
+/* The row and column clues for the cell in focus (or under the pointer) */
+.clue-list li.clue-active {
+    background: var(--accent-soft);
+    font-weight: 600;
+}
+
+.clue-list li.clue-active .clue-badge {
+    background: var(--primary-bg);
+    color: var(--on-primary);
+}
+
+/* ==========================================================================
+   Dialogs: a bottom sheet on phones, a centred card on larger screens
+   ========================================================================== */
+.sheet {
+    width: min(520px, 100vw);
+    max-width: 100vw;
+    max-height: min(88vh, 760px);
+    margin: auto auto 0;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden auto;
+    overscroll-behavior: contain;
+}
+
+.sheet[open] {
+    animation: sheet-up 0.28s cubic-bezier(.2,.8,.3,1);
+}
+
+.sheet::backdrop {
+    background: var(--backdrop);
+    animation: fade-in 0.2s ease;
+}
+
+@keyframes sheet-up {
+    from { transform: translateY(40px); opacity: 0; }
+    to { transform: none; opacity: 1; }
+}
+
+@keyframes fade-in {
+    from { opacity: 0; }
+}
+
+@media (min-width: 600px) {
+    .sheet {
+        margin: auto;
+        border-radius: var(--radius-lg);
+        width: min(520px, calc(100vw - 48px));
+    }
+}
+
+.sheet-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 12px 6px 22px;
+    background: var(--surface);
+}
+
+.sheet-header::before {
+    content: "";
+    position: absolute;
+    top: 7px;
+    left: 50%;
+    width: 36px;
+    height: 4px;
+    margin-left: -18px;
+    border-radius: 2px;
+    background: var(--border-strong);
+}
+
+@media (min-width: 600px) {
+    .sheet-header::before { display: none; }
+}
+
+.sheet-header h2 {
+    margin: 0;
+    outline: none;
+    font-size: 1.3rem;
+    letter-spacing: -0.01em;
+}
+
+.sheet-body {
+    padding: 6px 22px calc(24px + env(safe-area-inset-bottom));
+}
+
+.sheet-body h3 {
+    margin: 18px 0 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+}
+
+.rule-steps {
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: step;
+    display: grid;
+    gap: 12px;
+}
+
+.rule-steps li {
+    position: relative;
+    padding-left: 40px;
+    counter-increment: step;
+}
+
+.rule-steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    top: -1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.legend {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.legend li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.92rem;
+    line-height: 1.25;
+}
+
+.swatch {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    font-weight: 700;
+}
+
+.swatch-correct { background: var(--correct-bg); color: var(--correct-text); }
+.swatch-hint { background: var(--hint-bg); color: var(--hint-text); }
+.swatch-incorrect { background: var(--incorrect-bg); color: var(--incorrect-text); }
+.swatch-preset { background: var(--preset-bg); color: var(--preset-text); }
+
+.rules .muted {
+    margin: 18px 0;
+    font-size: 0.92rem;
+}
+
+.rules .button {
+    width: 100%;
+}
+
+/* Stats */
+.stats-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin: 6px 0 12px;
+}
+
+.stat-tile {
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 6px;
+    border-radius: var(--radius);
+    background: var(--surface-2);
+    text-align: center;
+}
+
+.stat-tile dt {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    line-height: 1.2;
+}
+
+.stat-tile dd {
+    margin: 0 0 2px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+}
+
+.stats-chart-status {
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.stats-chart-status:empty {
+    display: none;
+}
+
+.stats-chart {
+    margin-bottom: 8px;
+}
+
+.stats-chart-pie {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 8px;
+}
+
+.chart-title {
+    margin-top: 16px;
+}
+
 /* ==========================================================================
    End-of-game effects
    ========================================================================== */
 .result-signifier {
     display: inline-block;
-    font-size: 2em;
-    vertical-align: middle;
+    font-size: 2.2em;
+    line-height: 1.1;
 }
 
 .result-animate-win {
@@ -619,16 +1174,14 @@ body {
 .emoji-rain {
     pointer-events: none;
     position: fixed;
-    left: 0;
-    top: 0;
-    width: 100vw;
-    height: 100vh;
+    inset: 0;
     z-index: 9999;
-    overflow: visible;
+    overflow: hidden;
 }
 
 .emoji-raindrop {
     position: absolute;
+    top: 0;
     font-size: 2.2em;
     will-change: transform, opacity;
     user-select: none;
@@ -645,99 +1198,25 @@ body {
 
 .emoji-overlay {
     position: fixed;
-    left: 0;
-    top: 0;
-    width: 100vw;
-    height: 100vh;
+    inset: 0;
     z-index: 10000;
     display: flex;
     align-items: center;
     justify-content: center;
     pointer-events: none;
-    animation: overlay-fade 2.2s cubic-bezier(.23,1.32,.59,.99);
+    animation: overlay-fade 1.6s ease both;
 }
 
 .emoji-overlay-inner {
-    font-size: 8em;
-    filter: drop-shadow(0 0 16px #b00020cc);
+    font-size: 6em;
     animation: pop-bounce 0.7s cubic-bezier(.23,1.32,.59,.99);
 }
 
 @keyframes overlay-fade {
     0% { opacity: 0; }
     10% { opacity: 1; }
-    90% { opacity: 1; }
+    80% { opacity: 1; }
     100% { opacity: 0; }
-}
-
-/* ==========================================================================
-   Stats dialog
-   ========================================================================== */
-.stats-dialog {
-    width: min(600px, calc(100vw - 32px));
-    max-height: calc(100vh - 80px);
-    box-sizing: border-box;
-    padding: 24px;
-    border: none;
-    border-radius: 12px;
-    background: var(--surface);
-    color: var(--text);
-    font-family: 'Nunito', sans-serif;
-}
-
-.stats-dialog::backdrop {
-    background: var(--backdrop);
-}
-
-.stats-dialog h2 {
-    margin-top: 0;
-}
-
-.stats-close {
-    position: absolute;
-    top: 8px;
-    right: 12px;
-    font-size: 1.5em;
-    line-height: 1;
-    padding: 4px 8px;
-    background: none;
-    color: var(--text);
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.stats-close:focus-visible {
-    outline: 3px solid var(--focus-ring);
-}
-
-.stats-summary {
-    display: grid;
-    grid-template-columns: max-content auto;
-    gap: 4px 12px;
-    margin: 0 0 16px;
-}
-
-.stats-summary dt {
-    font-weight: 700;
-}
-
-.stats-summary dd {
-    margin: 0;
-}
-
-.stats-chart-status:empty {
-    display: none;
-}
-
-.stats-chart {
-    margin-bottom: 16px;
-}
-
-.stats-chart-pie {
-    display: flex;
-    justify-content: center;
-    align-items: center;
 }
 
 /* ==========================================================================
@@ -746,15 +1225,16 @@ body {
 .toast {
     position: fixed;
     left: 50%;
-    bottom: 24px;
-    transform: translate(-50%, 20px);
+    top: calc(68px + env(safe-area-inset-top));
+    transform: translate(-50%, -12px);
     max-width: calc(100vw - 32px);
     padding: 10px 18px;
     background: var(--toast-bg);
     color: var(--toast-text);
-    border-radius: 8px;
-    box-shadow: 0 4px 12px var(--shadow);
+    border-radius: 999px;
+    box-shadow: var(--shadow-md);
     font-size: 0.95rem;
+    font-weight: 500;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.2s, transform 0.2s;
@@ -767,78 +1247,26 @@ body {
 }
 
 /* ==========================================================================
-   Small screens
+   Short phones: tighten spacing so grid, pad and button fit
    ========================================================================== */
-@media (max-width: 768px) {
-    .container {
-        width: 100%;
-        min-width: 0;
-        max-width: 100vw;
-        border-radius: 0;
-        box-shadow: none;
-    }
+@media (max-height: 760px) and (max-width: 600px) {
+    .layout { padding-top: 8px; }
+    .play { gap: 10px; }
+    .grid-cells { gap: 6px; --chrome: 400px; }
+    .key { height: 46px; }
+    .keypad { gap: 6px; margin-top: 0; }
+    .button { min-height: 48px; }
+    .controls { margin-top: 0; }
+    .active-clues { min-height: 66px; padding: 4px 12px; }
+    .active-clue { font-size: 0.88rem; padding: 4px 0; }
+}
 
-    .main {
-        flex-direction: column;
-        padding: 8px;
-    }
-
-    section#clues-container {
-        order: 2;
-        min-height: 0;
-    }
-
-    .clues-section,
-    .game-rules-section,
-    .grid-section,
-    .controls-section {
-        width: 100%;
-        margin-right: 0;
-        margin-bottom: 20px;
-    }
-
-    .grid-cells {
-        grid-template-columns: auto repeat(4, minmax(44px, 1fr)) auto;
-        grid-template-rows: auto repeat(4, minmax(44px, 1fr)) auto;
-        gap: 4px;
-    }
-
-    .grid-cell,
-    .row-label,
-    .column-label {
-        font-size: 1rem;
-        padding: 0;
-    }
-
-    .grid-cell-content,
-    .grid-cell input {
-        font-size: 1.3rem;
-    }
-
-    .active-clues {
-        display: block;
-        box-sizing: border-box;
-        width: calc(100% - 16px);
-    }
-
-    .button {
-        font-size: 0.95rem;
-        padding: 8px 12px;
-        margin: 6px 0;
-    }
-
-    .guess-history-popover {
-        font-size: 1.2rem;
-        min-width: 40px;
-        max-width: 90px;
-        padding: 8px 6px;
-    }
-
-    .guess-chip {
-        width: 1.7em;
-        height: 1.7em;
-        font-size: 1em;
-    }
+@media (max-height: 600px) and (max-width: 600px) {
+    .grid-cells { --chrome: 348px; }
+    .app-bar-inner { height: 48px; }
+    .keypad { grid-template-columns: repeat(10, 1fr); gap: 4px; }
+    .key { height: 44px; font-size: 1.2rem; }
+    .key svg { width: 18px; }
 }
 
 /* ==========================================================================
@@ -850,12 +1278,9 @@ body {
     *::after {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
+        animation-delay: 0s !important;
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
-    }
-
-    .button:hover {
-        transform: none;
     }
 
     .emoji-rain,
