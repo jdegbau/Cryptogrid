@@ -98,10 +98,12 @@ test('grids.json: 7-8 blanks each, difficulty rises through the week', () => {
 test('date: weekday of a puzzle ID', () => {
     assert.equal(weekdayForPuzzleID(1), 1); // 21 May 2024 was a Tuesday (Monday = 0)
     assert.equal(weekdayForPuzzleID(7), 0);
-    // With 154 puzzles, the ID on a given date always falls on that date's weekday
-    for (const iso of ['2025-03-03T18:00:00Z', '2026-11-15T18:00:00Z', '2027-06-20T18:00:00Z']) {
-        const d = new Date(iso);
-        assert.equal(weekdayForPuzzleID(getPuzzleID(154, d)), (d.getUTCDay() + 6) % 7, iso);
+    // With a multiple of 7 puzzles, the ID on a given date always falls on that date's weekday
+    for (const total of [154, puzzles.length]) {
+        for (const iso of ['2025-03-03T18:00:00Z', '2026-11-15T18:00:00Z', '2027-06-20T18:00:00Z', '2029-11-08T18:00:00Z']) {
+            const d = new Date(iso);
+            assert.equal(weekdayForPuzzleID(getPuzzleID(total, d)), (d.getUTCDay() + 6) % 7, `${total} ${iso}`);
+        }
     }
 });
 
