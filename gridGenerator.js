@@ -230,7 +230,7 @@ if (isMain) {
     } else if (args[0] === '--encode') {
         console.log(JSON.stringify(encodePuzzles(readPuzzles(args[1])), null, 2));
     } else {
-        const count = parseInt(args[0], 10) || 154;
+        const count = parseInt(args[0], 10) || 1092;
         const startId = parseInt(args[1], 10) || 1;
         if (count % 7 !== 0) console.error(`Note: ${count} is not a multiple of 7, so puzzles won't keep their weekday when the list repeats.`);
         console.log(JSON.stringify(generatePuzzles(count, SIZE, startId, console.error), null, 2));

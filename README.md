@@ -2,7 +2,7 @@
 
 A daily logic puzzle. Fill a 4×4 grid with the numbers 1–9 so every row and column matches its clue. You get five guesses, and each one colours every cell: correct, wrong, or within 2 of the answer.
 
-Everyone gets the same puzzle on the same day, by the calendar in Chicago. Puzzles get harder through the week: Monday is the easiest and Sunday the hardest. Every puzzle has exactly one solution.
+Everyone gets the same puzzle on the same day, by the calendar in Chicago. Puzzles get harder through the week: Monday is the easiest and Sunday the hardest. Every puzzle has exactly one solution. Puzzle #1 is 10 November 2026, and the list of 1092 runs until 5 November 2029 before repeating.
 
 ## Running it locally
 
@@ -54,13 +54,13 @@ GitHub Actions runs both on every pull request and every push to `main` (`.githu
 ## Making new puzzles
 
 ```bash
-node gridGenerator.js 154 > grids.json
+node gridGenerator.js 1092 > grids.json
 ```
 
 - Use a multiple of 7. Puzzle IDs repeat every N days, and a multiple of 7 keeps each puzzle on the same weekday, which the difficulty ramp relies on.
 - Each puzzle gets 7–8 blank cells. Puzzles are ranked by how much searching the solver needs, and the easiest go to Mondays and the hardest to Sundays.
-- Generating 154 puzzles takes a few minutes.
-- To add puzzles without changing existing ones, pass a starting ID (e.g. `node gridGenerator.js 7 155`) and append the output to `grids.json`.
+- `grids.json` holds 1092 puzzles (156 weeks, about three years) before the list repeats. Generating them takes about 35 minutes; the output is only written at the end.
+- To add puzzles without changing existing ones, pass a starting ID (e.g. `node gridGenerator.js 7 1093`) and append the output to `grids.json`.
 - Changing the number of puzzles changes which puzzle falls on which day.
 
 `node gridGenerator.js --encode file.json` converts an older puzzle file with plain `answerGrid` entries to the encoded form.

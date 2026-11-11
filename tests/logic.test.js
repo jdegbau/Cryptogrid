@@ -78,7 +78,8 @@ test('date: puzzle day follows the Chicago calendar', () => {
     // 23:30 and 00:30 Chicago time either side of midnight
     assert.equal(getPuzzleDate(new Date('2026-11-10T05:30:00Z')), '2026-11-09');
     assert.equal(getPuzzleDate(new Date('2026-11-10T06:30:00Z')), '2026-11-10');
-    assert.equal(getPuzzleDayIndex(new Date('2024-05-21T12:00:00Z')), 0);
+    assert.equal(getPuzzleDayIndex(new Date('2026-11-10T12:00:00Z')), 0);
+    assert.equal(getPuzzleDayIndex(new Date('2026-11-09T12:00:00Z')), -1);
     // Across both DST changes the count goes up by exactly one per day
     for (const [a, b] of [['2026-10-31T17:00:00Z', '2026-11-01T17:00:00Z'], ['2026-11-01T17:00:00Z', '2026-11-02T17:00:00Z'],
         ['2026-03-07T17:00:00Z', '2026-03-08T17:00:00Z'], ['2026-03-08T17:00:00Z', '2026-03-09T17:00:00Z']]) {
@@ -96,12 +97,14 @@ test('grids.json: 7-8 blanks each, difficulty rises through the week', () => {
 });
 
 test('date: weekday of a puzzle ID', () => {
-    assert.equal(weekdayForPuzzleID(1), 1); // 21 May 2024 was a Tuesday (Monday = 0)
+    assert.equal(weekdayForPuzzleID(1), 1); // 10 Nov 2026 is a Tuesday (Monday = 0)
     assert.equal(weekdayForPuzzleID(7), 0);
-    // With 154 puzzles, the ID on a given date always falls on that date's weekday
-    for (const iso of ['2025-03-03T18:00:00Z', '2026-11-15T18:00:00Z', '2027-06-20T18:00:00Z']) {
-        const d = new Date(iso);
-        assert.equal(weekdayForPuzzleID(getPuzzleID(154, d)), (d.getUTCDay() + 6) % 7, iso);
+    // With a multiple of 7 puzzles, the ID on a given date always falls on that date's weekday
+    for (const total of [154, puzzles.length]) {
+        for (const iso of ['2025-03-03T18:00:00Z', '2026-11-15T18:00:00Z', '2027-06-20T18:00:00Z', '2029-11-08T18:00:00Z']) {
+            const d = new Date(iso);
+            assert.equal(weekdayForPuzzleID(getPuzzleID(total, d)), (d.getUTCDay() + 6) % 7, `${total} ${iso}`);
+        }
     }
 });
 
@@ -122,10 +125,15 @@ test('date: countdown to the next puzzle', () => {
 });
 
 test('date: puzzle IDs use the whole list and wrap', () => {
-    assert.equal(getPuzzleID(150, new Date('2024-05-21T12:00:00Z')), 1);
-    assert.equal(getPuzzleID(150, new Date('2024-10-17T12:00:00Z')), 150); // day 149
-    assert.equal(getPuzzleID(150, new Date('2024-10-18T12:00:00Z')), 1);   // day 150
-    assert.equal(getPuzzleID(150, new Date('2025-01-15T12:00:00Z')), 90);
+    assert.equal(getPuzzleID(150, new Date('2026-11-10T12:00:00Z')), 1);
+    assert.equal(getPuzzleID(150, new Date('2027-04-08T12:00:00Z')), 150); // day 149
+    assert.equal(getPuzzleID(150, new Date('2027-04-09T12:00:00Z')), 1);   // day 150
+    assert.equal(getPuzzleID(150, new Date('2027-02-07T12:00:00Z')), 90);  // day 89
+    // The full list starts on 10 Nov 2026 (Chicago) and repeats after 1092 days
+    assert.equal(getPuzzleID(1092, new Date('2026-11-11T05:00:00Z')), 1);    // 23:00 on 10 Nov in Chicago
+    assert.equal(getPuzzleID(1092, new Date('2029-11-05T18:00:00Z')), 1092); // day 1091
+    assert.equal(getPuzzleID(1092, new Date('2029-11-06T18:00:00Z')), 1);    // day 1092
+    assert.equal(getPuzzleID(1092, new Date('2026-11-09T18:00:00Z')), 1092); // before the start, it wraps
     assert.equal(formatTime(65), '1:05');
 });
 
