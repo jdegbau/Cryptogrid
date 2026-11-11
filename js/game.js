@@ -1,7 +1,7 @@
 // Entry point: game state, the submit/check flow, timer, saving and sharing.
 import { getPuzzleDate, getPuzzleID, formatTime, msUntilNextPuzzle, formatCountdown } from './date.js';
 import { getAnswerGrid } from './encoding.js';
-import { readGameState, writeGameState, clearGameState, recordResult, readStats, summarizeStats } from './storage.js';
+import { readGameState, writeGameState, clearGameState, recordResult, readStats, summarizeStats, STATS_VERSION } from './storage.js';
 import {
     cellKey, editableInputs, renderGrid, renderClues, readUserSolution, readCellStates,
     isSolved, markGuesses, revealAnswers, restoreCells, gridEmojis, highlightClues
@@ -221,11 +221,13 @@ const endGame = (won, { restoring = false } = {}) => {
     if (document.activeElement && document.activeElement.closest?.('.grid-cell')) shareButton.focus({ preventScroll: true });
     startCountdown();
 
-    const guessesUsed = TOTAL_GUESSES - state.guessesLeft;
+    // Submitted guesses that weren't the solution; a win adds the winning one.
+    const wrongGuesses = TOTAL_GUESSES - state.guessesLeft;
+    const guessesUsed = won ? wrongGuesses + 1 : wrongGuesses;
     const timeSpent = elapsedSeconds();
     if (!restoring) {
         if (won) playWinEffect(); else playLoseEffect();
-        recordResult(storage, { date: state.puzzleDate, win: won, guessesUsed, timeSpent });
+        recordResult(storage, { date: state.puzzleDate, win: won, guessesUsed, timeSpent, v: STATS_VERSION });
     }
 
     const share = buildResultShare({
@@ -233,7 +235,7 @@ const endGame = (won, { restoring = false } = {}) => {
         difficulty: state.puzzle.difficulty,
         grid: gridEmojis(state.answerGrid),
         won,
-        wrongGuesses: guessesUsed,
+        wrongGuesses,
         total: TOTAL_GUESSES,
         timeSpent,
         streak: summarizeStats(readStats(storage), state.puzzleDate).streak,

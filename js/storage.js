@@ -38,9 +38,18 @@ export const clearGameState = (storage) => {
     } catch (e) { }
 };
 
+// Entries from before version 2 counted only the wrong guesses on a win,
+// so a first-try win was saved as 0. They are corrected as they're read.
+export const STATS_VERSION = 2;
+
+const upgradeEntry = (entry) =>
+    !entry.v && entry.win && Number.isFinite(entry.guessesUsed)
+        ? { ...entry, guessesUsed: entry.guessesUsed + 1, v: STATS_VERSION }
+        : entry;
+
 export const readStats = (storage) => {
     const history = readJSON(storage, STATS_KEY);
-    return Array.isArray(history) ? history : [];
+    return Array.isArray(history) ? history.filter(e => e && typeof e === 'object').map(upgradeEntry) : [];
 };
 
 // Add or replace the entry for entry.date.

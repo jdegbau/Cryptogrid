@@ -10,7 +10,7 @@ import {
     daysBetween, weekdayForPuzzleID
 } from '../js/date.js';
 import {
-    readGameState, writeGameState, clearGameState, readStats, recordResult, summarizeStats, currentStreak, GAME_KEY
+    readGameState, writeGameState, clearGameState, readStats, recordResult, summarizeStats, currentStreak, GAME_KEY, STATS_KEY, STATS_VERSION
 } from '../js/storage.js';
 import { verifyPuzzles } from '../gridGenerator.js';
 
@@ -142,9 +142,9 @@ test('storage: saved game only resumes for the same puzzle and day', () => {
 
 test('storage: stats replace the entry for the same day and summarise', () => {
     const storage = new MemoryStorage();
-    recordResult(storage, { date: '2026-11-09', win: false, guessesUsed: 5, timeSpent: 100 });
-    recordResult(storage, { date: '2026-11-10', win: true, guessesUsed: 1, timeSpent: 50 });
-    recordResult(storage, { date: '2026-11-10', win: true, guessesUsed: 2, timeSpent: 60 });
+    recordResult(storage, { date: '2026-11-09', win: false, guessesUsed: 5, timeSpent: 100, v: 2 });
+    recordResult(storage, { date: '2026-11-10', win: true, guessesUsed: 1, timeSpent: 50, v: 2 });
+    recordResult(storage, { date: '2026-11-10', win: true, guessesUsed: 2, timeSpent: 60, v: 2 });
     const history = readStats(storage);
     assert.equal(history.length, 2);
     const summary = summarizeStats(history);
@@ -155,6 +155,19 @@ test('storage: stats replace the entry for the same day and summarise', () => {
     assert.equal(summary.avgGuesses, 3.5);
     assert.equal(summary.avgTime, 80);
     assert.deepEqual(summarizeStats([]).played, 0);
+});
+
+test('storage: old wins are corrected to count the winning guess, once', () => {
+    const storage = new MemoryStorage();
+    storage.setItem(STATS_KEY, JSON.stringify([
+        { date: '2026-11-08', win: true, guessesUsed: 0, timeSpent: 30 },
+        { date: '2026-11-09', win: false, guessesUsed: 5, timeSpent: 100 }
+    ]));
+    assert.deepEqual(readStats(storage).map(e => e.guessesUsed), [1, 5]);
+    // Recording writes the corrected entries back; reading again leaves them alone.
+    recordResult(storage, { date: '2026-11-10', win: true, guessesUsed: 3, timeSpent: 40, v: STATS_VERSION });
+    assert.deepEqual(readStats(storage).map(e => e.guessesUsed), [1, 5, 3]);
+    assert.deepEqual(readStats(storage).map(e => e.guessesUsed), [1, 5, 3]);
 });
 
 test('storage: streak needs consecutive days', () => {
