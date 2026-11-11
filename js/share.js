@@ -4,6 +4,14 @@
 import { formatTime } from './date.js';
 import { showToast, setupDialog } from './ui.js';
 
+// Squares for the shared grid. High contrast matches the in-game colours:
+// blue correct, orange close, black wrong (and white for given cells, so
+// they can't be mistaken for blue).
+export const CELL_EMOJI = {
+    standard: { preset: '🟦', correct: '🟩', incorrect: '🟥', hint: '🟨', empty: '⬜' },
+    highContrast: { preset: '⬜', correct: '🟦', incorrect: '⬛', hint: '🟧', empty: '▫️' }
+};
+
 export const GUESS_EMOJI = { wrong: '❌', right: '✅', unused: '⚪' };
 
 const streakText = (streak) => (streak >= 2 ? `🔥 ${streak}` : null);
@@ -21,15 +29,16 @@ export const guessLine = ({ won, wrongGuesses, total }) => {
 
 // The result of one game. The link is kept apart so the share sheet can pass
 // it as a URL (giving a link preview); `withLink` joins them for copying.
-export const buildResultShare = ({ puzzleID, difficulty, grid, won, wrongGuesses, total, timeSpent, streak, url }) => {
+// `showTime: false` leaves the time out (the player hid the timer).
+export const buildResultShare = ({ puzzleID, difficulty, grid, won, wrongGuesses, total, timeSpent, streak, url, showTime = true }) => {
     const level = difficulty ? ` (${difficulty})` : '';
     const lines = [
         `Pseudoku — #${puzzleID}${level}`,
         '',
         grid,
-        `Guesses: ${guessLine({ won, wrongGuesses, total })}`,
-        `Time: ${formatTime(timeSpent)}`
+        `Guesses: ${guessLine({ won, wrongGuesses, total })}`
     ];
+    if (showTime) lines.push(`Time: ${formatTime(timeSpent)}`);
     const streakLine = streakText(streak);
     if (streakLine) lines.push(`Streak: ${streakLine}`);
     return { text: lines.join('\n'), url };

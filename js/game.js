@@ -12,7 +12,8 @@ import {
     playWinEffect, playLoseEffect, shake
 } from './ui.js';
 import { setupStatsDialog } from './stats.js';
-import { buildResultShare, shareText, gameUrl } from './share.js';
+import { buildResultShare, shareText, gameUrl, CELL_EMOJI } from './share.js';
+import { setupSettingsDialog } from './settings.js';
 
 const TOTAL_GUESSES = 5;
 const WIN_MESSAGE = "Congratulations! You've solved the puzzle!";
@@ -230,18 +231,23 @@ const endGame = (won, { restoring = false } = {}) => {
         recordResult(storage, { date: state.puzzleDate, win: won, guessesUsed, timeSpent, v: STATS_VERSION });
     }
 
-    const share = buildResultShare({
-        puzzleID: state.puzzleID,
-        difficulty: state.puzzle.difficulty,
-        grid: gridEmojis(state.answerGrid),
-        won,
-        wrongGuesses,
-        total: TOTAL_GUESSES,
-        timeSpent,
-        streak: summarizeStats(readStats(storage), state.puzzleDate).streak,
-        url: gameUrl()
-    });
-    shareButton.onclick = () => shareText(share, shareButton);
+    // Built on click so it follows the current settings.
+    const buildShare = () => {
+        const { highContrast, hideTimer } = settings.get();
+        return buildResultShare({
+            puzzleID: state.puzzleID,
+            difficulty: state.puzzle.difficulty,
+            grid: gridEmojis(state.answerGrid, highContrast ? CELL_EMOJI.highContrast : CELL_EMOJI.standard),
+            won,
+            wrongGuesses,
+            total: TOTAL_GUESSES,
+            timeSpent,
+            showTime: !hideTimer,
+            streak: summarizeStats(readStats(storage), state.puzzleDate).streak,
+            url: gameUrl()
+        });
+    };
+    shareButton.onclick = () => shareText(buildShare(), shareButton);
 };
 
 // --- Submitting a guess ---
@@ -357,7 +363,10 @@ if (isLocal) window.__PSEUDOKU_ADMIN_RESET = () => {
     console.log('%cPseudoku: FULL game state and all saved data have been reset.', 'color: #6200ea; font-weight: bold;');
 };
 
+let settings = null;
+
 const init = async () => {
+    settings = setupSettingsDialog(storage, setupDialog);
     setupStatsDialog(storage, () => state.puzzleDate || getPuzzleDate());
     const help = setupDialog($('help-modal'), $('help-button'), [$('help-close'), $('help-start')]);
     keypad = setupKeypad({ getTarget: keypadTarget, getHistory: keypadHistory });

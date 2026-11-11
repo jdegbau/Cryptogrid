@@ -18,12 +18,13 @@ Then open <http://localhost:8000>.
 
 | Path | What it is |
 |---|---|
-| `index.html`, `styles.css` | The page. All colours are CSS variables at the top of `styles.css`, with a dark theme that follows the system setting. |
+| `index.html`, `styles.css` | The page. All colours are CSS variables at the top of `styles.css`, with a dark theme that follows the system setting unless a theme is picked in settings, and a high-contrast set for the cell colours. |
 | `js/game.js` | Entry point: game state, submitting guesses, timer, saving, sharing |
 | `js/grid.js` | Draws the grid and clues, highlights the selected row and column, reads entries, marks guesses |
 | `js/input.js` | Cell inputs, the on-screen number pad and the guess-history popover |
 | `js/ui.js` | Result line, toast, dialogs, win/lose effects |
 | `js/stats.js` | Stats dialog; loads Chart.js (pinned, with an integrity hash) on first open |
+| `js/settings.js` | Settings: theme, high-contrast colours, hiding the timer |
 | `js/share.js` | Share text for results and stats; share sheet on phones, clipboard elsewhere, copy-by-hand fallback |
 | `js/date.js` | Today's puzzle, the countdown to the next one, time formatting |
 | `js/storage.js` | Saved game and stats history (localStorage) |
@@ -47,6 +48,8 @@ Check that every puzzle in `grids.json` has exactly one solution:
 ```bash
 npm run verify
 ```
+
+GitHub Actions runs both on every pull request and every push to `main` (`.github/workflows/test.yml`).
 
 ## Making new puzzles
 

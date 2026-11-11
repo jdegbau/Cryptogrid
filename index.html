@@ -20,6 +20,16 @@
   <meta name="twitter:title" content="Pseudoku — Daily Logic Puzzle">
   <meta name="twitter:description" content="Fill the grid using logic and clues. Can you solve today's Pseudoku?">
   <meta name="twitter:image" content="https://jdegbau.com/Cryptogrid/og-image.jpeg">
+  <script>
+    // Apply saved settings before first paint (see js/settings.js).
+    try {
+      var s = JSON.parse(localStorage.getItem('pseudokuSettings')) || {};
+      var root = document.documentElement;
+      if (s.theme === 'light' || s.theme === 'dark') root.dataset.theme = s.theme;
+      if (s.highContrast === true) root.dataset.contrast = 'high';
+      if (s.hideTimer === true) root.dataset.hideTimer = '';
+    } catch (e) { }
+  </script>
   <link rel="preload" href="styles.css" as="style">
   <link rel="modulepreload" href="js/game.js">
   <link rel="stylesheet" href="styles.css">
@@ -40,6 +50,9 @@
         </button>
         <button class="icon-button" id="stats-button" aria-haspopup="dialog" aria-label="Your stats">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V5M19 20v-6"/></svg>
+        </button>
+        <button class="icon-button" id="settings-button" aria-haspopup="dialog" aria-label="Settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2.25"/><circle cx="10" cy="17" r="2.25"/></svg>
         </button>
       </div>
     </div>
@@ -158,6 +171,39 @@
         <p id="stats-import-status" class="stats-import-status" aria-live="polite"></p>
       </details>
     </div>
+  </dialog>
+
+  <dialog id="settings-modal" class="sheet" aria-labelledby="settings-title">
+    <div class="sheet-header">
+      <h2 id="settings-title" tabindex="-1" autofocus>Settings</h2>
+      <button id="settings-close" class="icon-button sheet-close" aria-label="Close settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <form class="sheet-body settings" id="settings-form">
+      <fieldset class="setting">
+        <legend class="setting-name">Theme</legend>
+        <div class="segmented">
+          <label><input type="radio" name="theme" value="system"><span>System</span></label>
+          <label><input type="radio" name="theme" value="light"><span>Light</span></label>
+          <label><input type="radio" name="theme" value="dark"><span>Dark</span></label>
+        </div>
+      </fieldset>
+      <label class="setting setting-toggle">
+        <span class="setting-text">
+          <span class="setting-name">High contrast colours</span>
+          <span class="setting-help" id="contrast-help">Blue for correct, orange for close and grey for wrong, in the grid and in the grid you share.</span>
+        </span>
+        <input type="checkbox" name="highContrast" role="switch" aria-describedby="contrast-help">
+      </label>
+      <label class="setting setting-toggle">
+        <span class="setting-text">
+          <span class="setting-name">Hide the timer</span>
+          <span class="setting-help" id="timer-help">For relaxed play. Your time is still saved in your stats, but isn't shown or shared.</span>
+        </span>
+        <input type="checkbox" name="hideTimer" role="switch" aria-describedby="timer-help">
+      </label>
+    </form>
   </dialog>
 
   <dialog id="copy-modal" class="sheet" aria-labelledby="copy-title">

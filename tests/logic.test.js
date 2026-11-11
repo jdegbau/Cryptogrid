@@ -256,3 +256,29 @@ test('backup: codes round-trip, reject junk and merge without overwriting', () =
     assert.equal(importStatsBackup(storage, 'nope'), null);
     assert.equal(readStats(storage).length, 3);
 });
+
+test('share: hiding the timer leaves the time out', async () => {
+    const { buildResultShare } = await import('../js/share.js');
+    const base = { puzzleID: 1, grid: '🟦', won: true, wrongGuesses: 0, total: 5, timeSpent: 75, streak: 0, url: 'u' };
+    assert.ok(buildResultShare(base).text.includes('Time: 1:15'));
+    assert.ok(!buildResultShare({ ...base, showTime: false }).text.includes('Time'));
+});
+
+test('share: high-contrast squares are all different from each other', async () => {
+    const { CELL_EMOJI } = await import('../js/share.js');
+    for (const palette of Object.values(CELL_EMOJI)) {
+        assert.equal(new Set(Object.values(palette)).size, Object.keys(palette).length);
+    }
+});
+
+test('settings: defaults, and invalid saved values are ignored', async () => {
+    const { readSettings, writeSettings, DEFAULT_SETTINGS, SETTINGS_KEY } = await import('../js/settings.js');
+    const storage = new MemoryStorage();
+    assert.deepEqual(readSettings(storage), DEFAULT_SETTINGS);
+    writeSettings(storage, { theme: 'dark', highContrast: true, hideTimer: false });
+    assert.deepEqual(readSettings(storage), { theme: 'dark', highContrast: true, hideTimer: false });
+    storage.setItem(SETTINGS_KEY, JSON.stringify({ theme: 'purple', highContrast: 'yes' }));
+    assert.deepEqual(readSettings(storage), DEFAULT_SETTINGS);
+    storage.setItem(SETTINGS_KEY, '{not json');
+    assert.deepEqual(readSettings(storage), DEFAULT_SETTINGS);
+});
