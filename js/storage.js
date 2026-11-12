@@ -30,6 +30,9 @@ export const readGameState = (storage, { puzzleID, puzzleDate }) => {
     return null;
 };
 
+// Whatever game is saved, for any puzzle.
+export const readAnyGameState = (storage) => readJSON(storage, GAME_KEY);
+
 export const writeGameState = (storage, state) => writeJSON(storage, GAME_KEY, state);
 
 export const clearGameState = (storage) => {
