@@ -23,10 +23,6 @@ const LOAD_ERROR = "Sorry, today's puzzle couldn't be loaded.";
 
 const storage = window.localStorage;
 const HELP_SEEN_KEY = 'pseudokuSeenHelp';
-// The puzzle this tab is on. sessionStorage lasts as long as the tab, through
-// reloads (including a phone reloading a tab it had unloaded in the
-// background), but not into new tabs.
-const TAB_PUZZLE_KEY = 'pseudokuTabPuzzle';
 
 const state = {
     puzzles: [],
@@ -221,7 +217,6 @@ const startCountdown = () => {
             button.textContent = "Play today's puzzle";
             button.addEventListener('click', () => {
                 track(EVENTS.NEXT_PUZZLE_CLICK, {});
-                try { sessionStorage.removeItem(TAB_PUZZLE_KEY); } catch (e) { }
                 window.location.reload();
             });
             el.appendChild(button);
@@ -548,28 +543,6 @@ const setupCluesSheet = () => {
     dialog.addEventListener('close', () => panel.append(groups));
 };
 
-// Today's puzzle, unless this tab was already playing an earlier day's
-// puzzle that isn't finished: then it carries on with that one, so the
-// new day doesn't take a game away mid-play. The page itself never switches
-// puzzle while open; this covers it being reloaded.
-const choosePuzzle = () => {
-    // The puzzle list is needed first: today's ID depends on its length.
-    state.puzzleDate = getPuzzleDate();
-    state.puzzleID = getPuzzleID(state.puzzles.length);
-    let pinned = null;
-    try { pinned = JSON.parse(sessionStorage.getItem(TAB_PUZZLE_KEY)); } catch (e) { }
-    if (pinned && pinned.puzzleDate !== state.puzzleDate) {
-        const saved = readGameState(storage, pinned);
-        if (saved && !saved.gameOver) {
-            state.puzzleDate = pinned.puzzleDate;
-            state.puzzleID = pinned.puzzleID;
-        }
-    }
-    try {
-        sessionStorage.setItem(TAB_PUZZLE_KEY, JSON.stringify({ puzzleDate: state.puzzleDate, puzzleID: state.puzzleID }));
-    } catch (e) { }
-};
-
 const init = async () => {
     setContextProvider(analyticsContext);
     settings = setupSettingsDialog(storage, setupDialog);
@@ -619,7 +592,11 @@ const init = async () => {
         track(EVENTS.PUZZLE_LOAD_ERROR, { error_type: 'fetch_failed', error_message: String(error?.message || error) });
         return;
     }
-    choosePuzzle();
+    // The puzzle list is needed first: today's ID depends on its length.
+    // The page stays on this puzzle while open, even past midnight, so a
+    // game in progress can be finished; a reload gets the new day's.
+    state.puzzleDate = getPuzzleDate();
+    state.puzzleID = getPuzzleID(state.puzzles.length);
     loadGame();
 };
 
