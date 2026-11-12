@@ -40,6 +40,7 @@ const state = {
 // Per-guess counters for analytics, reset after each submit.
 const entryCounts = { keyboard: 0, keypad: 0, refused: 0 };
 let lastGuessAt = null;  // elapsed ms at the previous submit (or the start)
+let lastSavedAt = 0;     // savedAt of the save this tab last wrote or loaded
 
 const $ = (id) => document.getElementById(id);
 const guessesFor = (row, col) => state.guessHistory[cellKey(row, col)] || [];
@@ -48,28 +49,30 @@ const guessesFor = (row, col) => state.guessHistory[cellKey(row, col)] || [];
 // Time is worked out from timestamps rather than counted by setInterval,
 // which browsers slow down in background tabs. It only runs while the page
 // is visible, so time spent in another tab or app doesn't count.
+// performance.now() is used because it never jumps when the system clock
+// is adjusted, unlike Date.now().
 
 const clock = { bankedMs: 0, since: null, running: false, tick: null };
 
-const elapsedSeconds = () =>
-    Math.floor((clock.bankedMs + (clock.since !== null ? Date.now() - clock.since : 0)) / 1000);
+const elapsedMs = () => clock.bankedMs + (clock.since !== null ? performance.now() - clock.since : 0);
+const elapsedSeconds = () => Math.floor(elapsedMs() / 1000);
 
 const showTime = () => { $('timer').textContent = formatTime(elapsedSeconds()); };
 
 const pauseClock = () => {
     if (clock.since !== null) {
-        clock.bankedMs += Date.now() - clock.since;
+        clock.bankedMs += performance.now() - clock.since;
         clock.since = null;
     }
 };
 
 const resumeClock = () => {
-    if (clock.running && clock.since === null && !document.hidden) clock.since = Date.now();
+    if (clock.running && clock.since === null && !document.hidden) clock.since = performance.now();
 };
 
-const startTimer = (fromSeconds = 0) => {
+const startTimer = (fromMs = 0) => {
     clearInterval(clock.tick);
-    clock.bankedMs = fromSeconds * 1000;
+    clock.bankedMs = fromMs;
     clock.since = null;
     clock.running = true;
     resumeClock();
@@ -90,8 +93,6 @@ const isGameOver = () => state.guessesLeft <= 0 || isSolved(readUserSolution(), 
 
 // --- Analytics context ---
 // Sent with every data-layer event; see js/analytics.js and docs/tracking.md.
-
-const elapsedMs = () => clock.bankedMs + (clock.since !== null ? Date.now() - clock.since : 0);
 
 const openCellCount = () => state.puzzle ? state.puzzle.displayGrid.flat().filter(v => v === null).length : 0;
 const solvedCellCount = () => document.querySelectorAll('.grid-cell.correct').length;
@@ -159,11 +160,27 @@ const onEntry = (e) => {
     }
 };
 
+// The saved game for today's puzzle, if any.
+const readSaved = () => readGameState(storage, { puzzleID: state.puzzleID, puzzleDate: state.puzzleDate });
+
+// Another tab has saved since this one last saved or loaded, so this tab's
+// board and clock are out of date.
+const isStale = (saved) => Boolean(saved) && (saved.savedAt || 0) > lastSavedAt;
+
+// Saved time in ms; older saves only kept whole seconds.
+const savedTimeMs = (saved) => Number.isFinite(saved.timeSpentMs) ? saved.timeSpentMs : (saved.timeSpent || 0) * 1000;
+
 const saveGame = () => {
     if (!state.puzzle) return;
+    // Never overwrite a newer save from another tab with this tab's older
+    // board and clock; this tab picks the newer one up when it is shown.
+    if (isStale(readSaved())) return;
+    lastSavedAt = Math.max(Date.now(), lastSavedAt + 1);
     writeGameState(storage, {
         guessesLeft: state.guessesLeft,
         timeSpent: elapsedSeconds(),
+        timeSpentMs: Math.round(elapsedMs()),
+        savedAt: lastSavedAt,
         guessHistory: state.guessHistory,
         currentPuzzle: state.puzzle,
         userSolution: readUserSolution(),
@@ -439,14 +456,15 @@ const startPuzzle = (puzzle) => {
 const resumeOrStart = () => {
     stopTimer();
     stopCountdown();
-    const saved = readGameState(storage, { puzzleID: state.puzzleID, puzzleDate: state.puzzleDate });
+    const saved = readSaved();
     if (saved) {
+        lastSavedAt = saved.savedAt || 0;
         startPuzzle(saved.currentPuzzle);
         state.guessesLeft = saved.guessesLeft;
         state.guessHistory = saved.guessHistory || {};
         // Saves from before analytics have no flag: any guess means started.
         state.started = saved.started === true || Object.keys(state.guessHistory).length > 0;
-        clock.bankedMs = (saved.timeSpent || 0) * 1000;
+        clock.bankedMs = savedTimeMs(saved);
         lastGuessAt = clock.bankedMs;
         drawPuzzle();
         restoreCells(saved.userSolution, saved.cellStates, state.answerGrid, makeInput, (row, col) => guessesFor(row, col).at(-1));
@@ -454,13 +472,16 @@ const resumeOrStart = () => {
             endGame(state.guessesLeft > 0, { restoring: true });
             return 'resumed_finished';
         }
+        $('check-button').hidden = false;
+        $('share-button').hidden = true;
         setResultMessage(guessesLeftMessage());
-        startTimer(saved.timeSpent || 0);
+        startTimer(savedTimeMs(saved));
         focusFirstOpenCell();
         return 'resumed';
     }
 
     clearGameState(storage);
+    lastSavedAt = 0;
     const puzzle = state.puzzles.find(p => p.id === state.puzzleID);
     if (!puzzle) {
         setResultMessage(LOAD_ERROR);
@@ -537,6 +558,9 @@ const init = async () => {
         if (document.hidden) {
             pauseClock();
             saveGame();
+        } else if (state.puzzle && isStale(readSaved())) {
+            // Played on in another tab meanwhile: carry on from there.
+            resumeOrStart();
         } else {
             resumeClock();
             showTime();
