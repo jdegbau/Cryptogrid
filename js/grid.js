@@ -42,6 +42,15 @@ export const updateCellLabel = (cellDiv) => {
     }
 };
 
+// A wrong or close cell whose number no longer matches the guess it was
+// marked for is "edited": it has a new entry pending for the next submit.
+export const updateEdited = (cellDiv) => {
+    const input = cellDiv.querySelector('input');
+    const marked = cellDiv.classList.contains('hint') || cellDiv.classList.contains('incorrect');
+    const edited = Boolean(input && marked && cellDiv.dataset.lastGuess && input.value !== cellDiv.dataset.lastGuess);
+    cellDiv.classList.toggle('edited', edited);
+};
+
 // Draws a 5x5 grid: column letters along the top, row numbers down the
 // left, 4x4 cells in the middle. `createInput(row, col)` builds the input
 // for each blank cell, and `setupCell(cellDiv, popover, row, col)` adds
@@ -195,7 +204,7 @@ export const readCellStates = () => {
         const row = Number(cell.dataset.row);
         const col = Number(cell.dataset.col);
         states[row] = states[row] || [];
-        states[row][col] = cell.className.replace(/\b(shake|in-line|reveal-anim|duplicate)\b/g, '').replace(/\s+/g, ' ').trim();
+        states[row][col] = cell.className.replace(/\b(shake|in-line|reveal-anim|duplicate|edited)\b/g, '').replace(/\s+/g, ' ').trim();
     });
     return states;
 };
@@ -226,7 +235,7 @@ export const markGuesses = (answerGrid) => {
         const answer = answerGrid[row][col];
         const guess = parseInt(input.value, 10);
         const cellDiv = input.closest('.grid-cell');
-        cellDiv.classList.remove('correct', 'incorrect', 'hint');
+        cellDiv.classList.remove('correct', 'incorrect', 'hint', 'edited');
         cellDiv.dataset.lastGuess = String(guess);
         flip(cellDiv);
         if (guess === answer) {
@@ -254,7 +263,9 @@ export const revealAnswers = (answerGrid) => {
 };
 
 // Put a saved game back: entered values, cell classes, locked answers.
-export const restoreCells = (userSolution, cellStates, answerGrid, createInput) => {
+// `lastGuessFor(row, col)` gives the last submitted guess for a cell, so a
+// number changed since then still shows as edited.
+export const restoreCells = (userSolution, cellStates, answerGrid, createInput, lastGuessFor) => {
     cellStates.forEach((rowStates, row) => {
         rowStates.forEach((className, col) => {
             const cellDiv = cellAt(row, col);
@@ -271,12 +282,12 @@ export const restoreCells = (userSolution, cellStates, answerGrid, createInput) 
                     content.textContent = '';
                     content.appendChild(input);
                 }
-                if (value) {
-                    input.value = value;
-                    if (cellDiv.classList.contains('hint') || cellDiv.classList.contains('incorrect')) {
-                        cellDiv.dataset.lastGuess = String(value);
-                    }
+                if (value) input.value = value;
+                if (cellDiv.classList.contains('hint') || cellDiv.classList.contains('incorrect')) {
+                    const last = lastGuessFor(row, col);
+                    if (last) cellDiv.dataset.lastGuess = String(last);
                 }
+                updateEdited(cellDiv);
             }
             updateCellLabel(cellDiv);
         });

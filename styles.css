@@ -626,15 +626,27 @@ svg .fill {
     background: var(--accent-line);
 }
 
-/* The selected cell */
-.grid-cell:focus-within {
-    box-shadow: inset 0 0 0 2.5px var(--accent), 0 0 0 4px var(--accent-soft);
-    z-index: 2;
+/* Rings drawn above the cell's coloured content (selection, edited
+   guesses, repeats); a box-shadow on the cell itself would sit underneath. */
+.grid-cell::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 1;
+    transition: box-shadow 0.15s;
 }
 
-/* Repeated guess */
-.grid-cell.duplicate {
-    box-shadow: inset 0 0 0 2.5px var(--error-bg);
+/* The selected cell: a solid accent ring, a halo and a slight lift so it
+   stands out from every other cell, coloured or not. */
+.grid-cell:focus-within {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent), var(--shadow-md);
+    z-index: 2;
+}
+.grid-cell:focus-within::before {
+    box-shadow: inset 0 0 0 3.5px var(--accent);
 }
 
 .duplicate-message {
@@ -704,9 +716,27 @@ svg .fill {
 .grid-cell.hint .grid-cell-content { background: var(--hint-bg); color: var(--hint-text); }
 .grid-cell.revealed .grid-cell-content { background: var(--revealed-bg); color: var(--revealed-text); }
 
-.grid-cell.incorrect:focus-within,
-.grid-cell.hint:focus-within {
-    box-shadow: inset 0 0 0 2.5px var(--accent), 0 0 0 4px var(--accent-soft);
+/* A wrong or close cell whose number has been changed since the last
+   guess: the fill clears so it reads as a fresh entry, and a ring plus a
+   corner tag ("≈ 4") in the old colour keep the earlier feedback in view. */
+.grid-cell.hint.edited { --was-bg: var(--hint-bg); --was-text: var(--hint-text); --was-symbol: "≈"; }
+.grid-cell.incorrect.edited { --was-bg: var(--incorrect-bg); --was-text: var(--incorrect-text); --was-symbol: "✗"; }
+
+.grid-cell.edited .grid-cell-content {
+    background: var(--cell-bg);
+    color: var(--cell-text);
+}
+.grid-cell.edited::before {
+    box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--was-text) 40%, var(--was-bg));
+}
+.grid-cell.edited:focus-within::before {
+    box-shadow: inset 0 0 0 3.5px var(--accent), inset 0 0 0 7.5px color-mix(in srgb, var(--was-text) 40%, var(--was-bg));
+}
+
+/* Repeated guess */
+.grid-cell.duplicate::before,
+.grid-cell.duplicate:focus-within::before {
+    box-shadow: inset 0 0 0 3.5px var(--error-bg);
 }
 
 /* Status symbols, so feedback doesn't rely on colour alone.
@@ -726,6 +756,18 @@ svg .fill {
 .grid-cell.correct::after { content: "✓"; content: "✓" / ""; color: var(--correct-text); }
 .grid-cell.incorrect::after { content: "✗"; content: "✗" / ""; color: var(--incorrect-text); }
 .grid-cell.hint::after { content: "≈"; content: "≈" / ""; color: var(--hint-text); }
+.grid-cell.edited::after {
+    content: var(--was-symbol) " " attr(data-last-guess);
+    content: var(--was-symbol) " " attr(data-last-guess) / "";
+    top: 6px;
+    right: 6px;
+    padding: 2px 5px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    background: var(--was-bg);
+    color: var(--was-text);
+    z-index: 2;
+}
 
 /* A guess lands: cells flip in, one after another */
 .grid-cell.reveal-anim .grid-cell-content {

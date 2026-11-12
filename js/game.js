@@ -4,7 +4,7 @@ import { getAnswerGrid } from './encoding.js';
 import { readGameState, writeGameState, clearGameState, recordResult, readStats, summarizeStats, STATS_VERSION } from './storage.js';
 import {
     cellKey, editableInputs, renderGrid, renderClues, readUserSolution, readCellStates,
-    isSolved, markGuesses, revealAnswers, restoreCells, gridEmojis, highlightClues
+    isSolved, markGuesses, revealAnswers, restoreCells, gridEmojis, highlightClues, updateEdited
 } from './grid.js';
 import { createCellInput, attachGuessPopover, setupKeypad, guessQuality } from './input.js';
 import {
@@ -186,6 +186,7 @@ const drawPuzzle = () => {
                 getAnswer: () => state.answerGrid[row][col]
             });
             setupClueHighlight(cellDiv, row, col);
+            cellDiv.addEventListener('change', () => updateEdited(cellDiv));
         }
     });
     updateGuessIcons(state.guessesLeft, TOTAL_GUESSES);
@@ -326,7 +327,7 @@ const resumeOrStart = () => {
         state.guessHistory = saved.guessHistory || {};
         clock.bankedMs = (saved.timeSpent || 0) * 1000;
         drawPuzzle();
-        restoreCells(saved.userSolution, saved.cellStates, state.answerGrid, makeInput);
+        restoreCells(saved.userSolution, saved.cellStates, state.answerGrid, makeInput, (row, col) => guessesFor(row, col).at(-1));
         if (saved.gameOver) {
             endGame(state.guessesLeft > 0, { restoring: true });
         } else {
