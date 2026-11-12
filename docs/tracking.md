@@ -47,7 +47,7 @@ Before each event, the game pushes `{ event_data: null }`. Tag managers merge pu
 | `guesses_left` | number | `3` | Wrong guesses the player can still make |
 | `guesses_total` | number | `5` | Guesses allowed per puzzle |
 | `cells_solved` | number | `5` | Open cells the player has got right (answers shown after a loss don't count) |
-| `time_spent_sec` | number | `94` | Time on the puzzle. Counts only while the page is visible, and carries over a reload. |
+| `time_spent_sec` | number | `94` | Time on the puzzle, from the first digit entered. Wall-clock time: it keeps counting while the page is hidden or closed. |
 
 ### `player`
 
@@ -107,7 +107,7 @@ A guess was accepted and checked.
 | `cells_correct` | Correct cells |
 | `cells_close` | Cells within 2 of the answer |
 | `cells_wrong` | Cells more than 2 away |
-| `seconds_since_last_guess` | Time since the previous guess, or since the start for guess 1 |
+| `seconds_since_last_guess` | Time since the previous guess, or since the first digit for guess 1 |
 | `keyboard_entries` | Digits typed since the last guess |
 | `keypad_entries` | Digits tapped on the number pad since the last guess |
 | `refused_entries` | Digits refused because they had already been tried in that cell |

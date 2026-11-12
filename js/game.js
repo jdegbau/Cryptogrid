@@ -1,7 +1,7 @@
 // Entry point: game state, the submit/check flow, timer, saving and sharing.
 import { getPuzzleDate, getPuzzleID, formatTime, msUntilNextPuzzle, formatCountdown, weekdayForPuzzleID, WEEKDAYS } from './date.js';
 import { getAnswerGrid } from './encoding.js';
-import { readGameState, writeGameState, clearGameState, recordResult, readStats, summarizeStats, STATS_VERSION } from './storage.js';
+import { readGameState, readAnyGameState, writeGameState, clearGameState, recordResult, readStats, summarizeStats, STATS_VERSION } from './storage.js';
 import {
     cellKey, editableInputs, renderGrid, renderClues, readUserSolution, readCellStates,
     isSolved, markGuesses, revealAnswers, restoreCells, gridEmojis, highlightClues, updateEdited
@@ -40,48 +40,45 @@ const state = {
 // Per-guess counters for analytics, reset after each submit.
 const entryCounts = { keyboard: 0, keypad: 0, refused: 0 };
 let lastGuessAt = null;  // elapsed ms at the previous submit (or the start)
+let lastSavedAt = 0;     // savedAt of the save this tab last wrote or loaded
+let shownAt = 0;         // performance.now() when the puzzle was drawn
 
 const $ = (id) => document.getElementById(id);
 const guessesFor = (row, col) => state.guessHistory[cellKey(row, col)] || [];
 
 // --- Clock ---
-// Time is worked out from timestamps rather than counted by setInterval,
-// which browsers slow down in background tabs. It only runs while the page
-// is visible, so time spent in another tab or app doesn't count.
+// Wall-clock time from the first digit entered to the end of the game. It
+// keeps running while the page is hidden or closed, so the time is the
+// same whichever tab or device-wake it is read from. setInterval only
+// refreshes the display; the time itself comes from the start timestamp.
 
-const clock = { bankedMs: 0, since: null, running: false, tick: null };
+const clock = { startedAt: null, finalMs: null, tick: null };
 
-const elapsedSeconds = () =>
-    Math.floor((clock.bankedMs + (clock.since !== null ? Date.now() - clock.since : 0)) / 1000);
+const elapsedMs = () => clock.finalMs ??
+    (clock.startedAt !== null ? Math.max(0, Date.now() - clock.startedAt) : 0);
+const elapsedSeconds = () => Math.floor(elapsedMs() / 1000);
 
 const showTime = () => { $('timer').textContent = formatTime(elapsedSeconds()); };
 
-const pauseClock = () => {
-    if (clock.since !== null) {
-        clock.bankedMs += Date.now() - clock.since;
-        clock.since = null;
-    }
-};
-
-const resumeClock = () => {
-    if (clock.running && clock.since === null && !document.hidden) clock.since = Date.now();
-};
-
-const startTimer = (fromSeconds = 0) => {
+// startedAt is an epoch ms timestamp, or null if no digit is in yet.
+const startTimer = (startedAt) => {
     clearInterval(clock.tick);
-    clock.bankedMs = fromSeconds * 1000;
-    clock.since = null;
-    clock.running = true;
-    resumeClock();
+    clock.startedAt = startedAt;
+    clock.finalMs = null;
     showTime();
-    clock.tick = setInterval(showTime, 250);
+    if (startedAt !== null) clock.tick = setInterval(showTime, 250);
 };
 
 const stopTimer = () => {
-    pauseClock();
-    clock.running = false;
+    if (clock.finalMs === null) clock.finalMs = elapsedMs();
     clearInterval(clock.tick);
     showTime();
+};
+
+const resetClock = () => {
+    clearInterval(clock.tick);
+    clock.startedAt = null;
+    clock.finalMs = null;
 };
 
 // --- Saving ---
@@ -90,8 +87,6 @@ const isGameOver = () => state.guessesLeft <= 0 || isSolved(readUserSolution(), 
 
 // --- Analytics context ---
 // Sent with every data-layer event; see js/analytics.js and docs/tracking.md.
-
-const elapsedMs = () => clock.bankedMs + (clock.since !== null ? Date.now() - clock.since : 0);
 
 const openCellCount = () => state.puzzle ? state.puzzle.displayGrid.flat().filter(v => v === null).length : 0;
 const solvedCellCount = () => document.querySelectorAll('.grid-cell.correct').length;
@@ -155,15 +150,41 @@ const onEntry = (e) => {
     entryCounts[source] = (entryCounts[source] || 0) + 1;
     if (!state.started && gameStatus() === 'not_started') {
         state.started = true;
-        track(EVENTS.PUZZLE_START, { entry_source: source, seconds_to_first_entry: seconds(elapsedMs()) });
+        if (clock.startedAt === null) startTimer(Date.now());
+        track(EVENTS.PUZZLE_START, { entry_source: source, seconds_to_first_entry: seconds(performance.now() - shownAt) });
+        saveGame();  // so the start time survives the page being closed
     }
 };
 
+// The saved game for today's puzzle, if any.
+const readSaved = () => readGameState(storage, { puzzleID: state.puzzleID, puzzleDate: state.puzzleDate });
+
+// Another tab has saved this puzzle since this one last saved or loaded,
+// so this tab's board and clock are out of date.
+const isStale = (saved) => Boolean(saved) && (saved.savedAt || 0) > lastSavedAt;
+
+// The save slot holds a later day's puzzle, started in another tab while
+// this one carried on with an earlier day's. Don't overwrite it.
+const laterDaySaved = () => {
+    const any = readAnyGameState(storage);
+    return Boolean(any && typeof any.puzzleDate === 'string' && any.puzzleDate > state.puzzleDate);
+};
+
+// Saved time in ms; older saves only kept whole seconds.
+const savedTimeMs = (saved) => Number.isFinite(saved.timeSpentMs) ? saved.timeSpentMs : (saved.timeSpent || 0) * 1000;
+
 const saveGame = () => {
     if (!state.puzzle) return;
+    // Never overwrite a newer save from another tab with this tab's older
+    // board and clock; this tab picks the newer one up when it is shown.
+    if (isStale(readSaved()) || laterDaySaved()) return;
+    lastSavedAt = Math.max(Date.now(), lastSavedAt + 1);
     writeGameState(storage, {
         guessesLeft: state.guessesLeft,
         timeSpent: elapsedSeconds(),
+        timeSpentMs: Math.round(elapsedMs()),
+        startedAt: clock.startedAt,
+        savedAt: lastSavedAt,
         guessHistory: state.guessHistory,
         currentPuzzle: state.puzzle,
         userSolution: readUserSolution(),
@@ -437,30 +458,40 @@ const startPuzzle = (puzzle) => {
 };
 
 const resumeOrStart = () => {
-    stopTimer();
+    resetClock();
     stopCountdown();
-    const saved = readGameState(storage, { puzzleID: state.puzzleID, puzzleDate: state.puzzleDate });
+    shownAt = performance.now();
+    const saved = readSaved();
     if (saved) {
+        lastSavedAt = saved.savedAt || 0;
         startPuzzle(saved.currentPuzzle);
         state.guessesLeft = saved.guessesLeft;
         state.guessHistory = saved.guessHistory || {};
         // Saves from before analytics have no flag: any guess means started.
         state.started = saved.started === true || Object.keys(state.guessHistory).length > 0;
-        clock.bankedMs = (saved.timeSpent || 0) * 1000;
-        lastGuessAt = clock.bankedMs;
+        lastGuessAt = savedTimeMs(saved);
         drawPuzzle();
         restoreCells(saved.userSolution, saved.cellStates, state.answerGrid, makeInput, (row, col) => guessesFor(row, col).at(-1));
         if (saved.gameOver) {
+            clock.finalMs = savedTimeMs(saved);
             endGame(state.guessesLeft > 0, { restoring: true });
             return 'resumed_finished';
         }
+        $('check-button').hidden = false;
+        $('share-button').hidden = true;
         setResultMessage(guessesLeftMessage());
-        startTimer(saved.timeSpent || 0);
+        // Saves from before the wall clock have no start time: work one
+        // out from the time they had counted.
+        startTimer(Number.isFinite(saved.startedAt) ? saved.startedAt
+            : state.started ? Date.now() - savedTimeMs(saved) : null);
         focusFirstOpenCell();
         return 'resumed';
     }
 
-    clearGameState(storage);
+    // Only clear an earlier day's save; a later day's (from another tab)
+    // is left alone, and this tab won't save over it.
+    if (!laterDaySaved()) clearGameState(storage);
+    lastSavedAt = 0;
     const puzzle = state.puzzles.find(p => p.id === state.puzzleID);
     if (!puzzle) {
         setResultMessage(LOAD_ERROR);
@@ -473,7 +504,7 @@ const resumeOrStart = () => {
     lastGuessAt = 0;
     drawPuzzle();
     setResultMessage(guessesLeftMessage());
-    startTimer(0);
+    startTimer(null);
     focusFirstOpenCell();
     return 'new';
 };
@@ -531,14 +562,15 @@ const init = async () => {
         $('help-modal').addEventListener('close', focusFirstOpenCell, { once: true });
     }
 
-    // Pause the clock and save when the page is hidden (switching tabs or
-    // apps); on phones that's often the last chance before it is closed.
+    // Save when the page is hidden (switching tabs or apps); on phones
+    // that's often the last chance before it is closed.
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
-            pauseClock();
             saveGame();
+        } else if (state.puzzle && isStale(readSaved())) {
+            // Played on in another tab meanwhile: carry on from there.
+            resumeOrStart();
         } else {
-            resumeClock();
             showTime();
         }
     });
@@ -561,6 +593,8 @@ const init = async () => {
         return;
     }
     // The puzzle list is needed first: today's ID depends on its length.
+    // The page stays on this puzzle while open, even past midnight, so a
+    // game in progress can be finished; a reload gets the new day's.
     state.puzzleDate = getPuzzleDate();
     state.puzzleID = getPuzzleID(state.puzzles.length);
     loadGame();
