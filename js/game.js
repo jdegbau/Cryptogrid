@@ -1,5 +1,5 @@
 // Entry point: game state, the submit/check flow, timer, saving and sharing.
-import { getPuzzleDate, getPuzzleID, formatTime, msUntilNextPuzzle, formatCountdown } from './date.js';
+import { getPuzzleDate, getPuzzleID, formatTime, msUntilNextPuzzle, formatCountdown, weekdayForPuzzleID, WEEKDAYS } from './date.js';
 import { getAnswerGrid } from './encoding.js';
 import { readGameState, writeGameState, clearGameState, recordResult, readStats, summarizeStats, STATS_VERSION } from './storage.js';
 import {
@@ -14,6 +14,7 @@ import {
 import { setupStatsDialog } from './stats.js';
 import { buildResultShare, shareText, gameUrl, CELL_EMOJI } from './share.js';
 import { setupSettingsDialog } from './settings.js';
+import { track, EVENTS, setContextProvider, inputDevice, displayMode, ruleList, seconds } from './analytics.js';
 
 const TOTAL_GUESSES = 5;
 const WIN_MESSAGE = "Congratulations! You've solved the puzzle!";
@@ -31,8 +32,14 @@ const state = {
     answerGrid: null,   // decoded, kept in memory only
     guessesLeft: TOTAL_GUESSES,
     guessHistory: {},
-    focusedCell: null   // [row, col] of the input with focus
+    focusedCell: null,  // [row, col] of the input with focus
+    started: false,     // a digit has been entered (puzzle_start sent)
+    firstVisit: false   // first time this browser has opened the game
 };
+
+// Per-guess counters for analytics, reset after each submit.
+const entryCounts = { keyboard: 0, keypad: 0, refused: 0 };
+let lastGuessAt = null;  // elapsed ms at the previous submit (or the start)
 
 const $ = (id) => document.getElementById(id);
 const guessesFor = (row, col) => state.guessHistory[cellKey(row, col)] || [];
@@ -81,6 +88,77 @@ const stopTimer = () => {
 
 const isGameOver = () => state.guessesLeft <= 0 || isSolved(readUserSolution(), state.answerGrid);
 
+// --- Analytics context ---
+// Sent with every data-layer event; see js/analytics.js and docs/tracking.md.
+
+const elapsedMs = () => clock.bankedMs + (clock.since !== null ? Date.now() - clock.since : 0);
+
+const openCellCount = () => state.puzzle ? state.puzzle.displayGrid.flat().filter(v => v === null).length : 0;
+const solvedCellCount = () => document.querySelectorAll('.grid-cell.correct').length;
+
+// Submitted guesses so far: every submit adds one to each cell still open,
+// so the longest history is the number of submits.
+const guessesSubmitted = () => Math.max(0, ...Object.values(state.guessHistory).map(h => h.length));
+
+const gameStatus = () => {
+    if (!state.puzzle || !state.answerGrid) return 'loading';
+    if (state.guessesLeft <= 0) return 'lost';
+    if (isSolved(readUserSolution(), state.answerGrid)) return 'won';
+    return state.started ? 'in_progress' : 'not_started';
+};
+
+const analyticsContext = () => {
+    const today = state.puzzleDate || getPuzzleDate();
+    const summary = summarizeStats(readStats(storage), today);
+    const prefs = settings?.get() || {};
+    const p = state.puzzle;
+    return {
+        puzzle: p ? {
+            puzzle_id: state.puzzleID,
+            puzzle_date: state.puzzleDate,
+            difficulty: p.difficulty || null,
+            weekday: WEEKDAYS[weekdayForPuzzleID(state.puzzleID)],
+            row_rules: ruleList(p.rowRules),
+            col_rules: ruleList(p.colRules),
+            cells_open: openCellCount()
+        } : null,
+        game: {
+            status: gameStatus(),
+            guesses_submitted: guessesSubmitted(),
+            guesses_left: state.guessesLeft,
+            guesses_total: TOTAL_GUESSES,
+            cells_solved: solvedCellCount(),
+            time_spent_sec: seconds(elapsedMs())
+        },
+        player: {
+            first_visit: state.firstVisit,
+            games_played: summary.played,
+            games_won: summary.wins,
+            win_rate: Math.round(summary.winRate),
+            current_streak: summary.streak,
+            best_streak: summary.bestStreak,
+            theme: prefs.theme ?? null,
+            high_contrast: prefs.highContrast ?? null,
+            hide_timer: prefs.hideTimer ?? null
+        },
+        app: {
+            input_device: inputDevice(),
+            display_mode: displayMode()
+        }
+    };
+};
+
+// A digit typed or tapped into a cell. The first one starts the puzzle.
+const onEntry = (e) => {
+    const { source, accepted } = e.detail;
+    if (!accepted) { entryCounts.refused++; return; }
+    entryCounts[source] = (entryCounts[source] || 0) + 1;
+    if (!state.started && gameStatus() === 'not_started') {
+        state.started = true;
+        track(EVENTS.PUZZLE_START, { entry_source: source, seconds_to_first_entry: seconds(elapsedMs()) });
+    }
+};
+
 const saveGame = () => {
     if (!state.puzzle) return;
     writeGameState(storage, {
@@ -92,7 +170,8 @@ const saveGame = () => {
         cellStates: readCellStates(),
         gameOver: isGameOver(),
         puzzleID: state.puzzleID,
-        puzzleDate: state.puzzleDate
+        puzzleDate: state.puzzleDate,
+        started: state.started
     });
 };
 
@@ -115,7 +194,10 @@ const startCountdown = () => {
             const button = document.createElement('button');
             button.className = 'button primary';
             button.textContent = "Play today's puzzle";
-            button.addEventListener('click', () => window.location.reload());
+            button.addEventListener('click', () => {
+                track(EVENTS.NEXT_PUZZLE_CLICK, {});
+                window.location.reload();
+            });
             el.appendChild(button);
             return;
         }
@@ -230,6 +312,15 @@ const endGame = (won, { restoring = false } = {}) => {
     if (!restoring) {
         if (won) playWinEffect(); else playLoseEffect();
         recordResult(storage, { date: state.puzzleDate, win: won, guessesUsed, timeSpent, v: STATS_VERSION });
+        // After recordResult, so the player context includes this game.
+        track(EVENTS.PUZZLE_COMPLETE, {
+            result: won ? 'win' : 'loss',
+            guesses_used: guessesUsed,
+            wrong_guesses: wrongGuesses,
+            time_spent_sec: timeSpent,
+            cells_solved: solvedCellCount(),
+            cells_open: openCellCount()
+        });
     }
 
     // Built on click so it follows the current settings.
@@ -248,12 +339,16 @@ const endGame = (won, { restoring = false } = {}) => {
             url: gameUrl()
         });
     };
-    shareButton.onclick = () => shareText(buildShare(), shareButton);
+    shareButton.onclick = async () => {
+        const method = await shareText(buildShare(), shareButton);
+        track(EVENTS.SHARE, { content_type: 'result', method, result: won ? 'win' : 'loss' });
+    };
 };
 
 // --- Submitting a guess ---
 
-const refuseSubmit = (inputs, message) => {
+const refuseSubmit = (inputs, message, reason) => {
+    track(EVENTS.GUESS_REJECTED, { reason, cells_affected: inputs.length, guess_number: guessesSubmitted() + 1 });
     shake(inputs.map(input => input.closest('.grid-cell')));
     setResultMessage(message);
     inputs[0].focus();
@@ -267,13 +362,13 @@ const checkSolution = () => {
     const inputs = editableInputs();
     const empty = inputs.filter(input => input.value === '');
     if (empty.length) {
-        refuseSubmit(empty, 'Fill in every cell before submitting.');
+        refuseSubmit(empty, 'Fill in every cell before submitting.', 'incomplete');
         enableAfter(1000);
         return;
     }
     const repeats = inputs.filter(input => guessesFor(Number(input.dataset.row), Number(input.dataset.col)).includes(input.value));
     if (repeats.length) {
-        refuseSubmit(repeats, 'You cannot submit with a previously guessed value!');
+        refuseSubmit(repeats, 'You cannot submit with a previously guessed value!', 'repeated_value');
         enableAfter(1000);
         return;
     }
@@ -283,12 +378,35 @@ const checkSolution = () => {
         state.guessHistory[key] = state.guessHistory[key] || [];
         state.guessHistory[key].push(input.value);
     });
+    // How this guess scored, counted before the correct cells lock.
+    const scored = { correct: 0, hint: 0, incorrect: 0 };
+    inputs.forEach(input => {
+        scored[guessQuality(input.value, state.answerGrid[Number(input.dataset.row)][Number(input.dataset.col)])]++;
+    });
     markGuesses(state.answerGrid);
+    const now = elapsedMs();
+    const guessData = {
+        guess_number: guessesSubmitted(),
+        cells_checked: inputs.length,
+        cells_correct: scored.correct,
+        cells_close: scored.hint,
+        cells_wrong: scored.incorrect,
+        seconds_since_last_guess: seconds(now - (lastGuessAt ?? 0)),
+        keyboard_entries: entryCounts.keyboard,
+        keypad_entries: entryCounts.keypad,
+        refused_entries: entryCounts.refused
+    };
+    lastGuessAt = now;
+    Object.keys(entryCounts).forEach(k => { entryCounts[k] = 0; });
 
-    if (isSolved(readUserSolution(), state.answerGrid)) {
+    const solved = isSolved(readUserSolution(), state.answerGrid);
+    if (!solved) state.guessesLeft--;
+    // Sent before puzzle_complete, so the guess comes first in reports.
+    track(EVENTS.GUESS_SUBMIT, { ...guessData, result: solved ? 'solved' : 'not_solved' });
+
+    if (solved) {
         endGame(true);
     } else {
-        state.guessesLeft--;
         updateGuessIcons(state.guessesLeft, TOTAL_GUESSES);
         if (state.guessesLeft <= 0) {
             revealAnswers(state.answerGrid);
@@ -315,6 +433,7 @@ const startPuzzle = (puzzle) => {
     state.puzzle = puzzle;
     state.answerGrid = getAnswerGrid(puzzle);
     state.focusedCell = null;
+    Object.keys(entryCounts).forEach(k => { entryCounts[k] = 0; });
 };
 
 const resumeOrStart = () => {
@@ -325,32 +444,48 @@ const resumeOrStart = () => {
         startPuzzle(saved.currentPuzzle);
         state.guessesLeft = saved.guessesLeft;
         state.guessHistory = saved.guessHistory || {};
+        // Saves from before analytics have no flag: any guess means started.
+        state.started = saved.started === true || Object.keys(state.guessHistory).length > 0;
         clock.bankedMs = (saved.timeSpent || 0) * 1000;
+        lastGuessAt = clock.bankedMs;
         drawPuzzle();
         restoreCells(saved.userSolution, saved.cellStates, state.answerGrid, makeInput, (row, col) => guessesFor(row, col).at(-1));
         if (saved.gameOver) {
             endGame(state.guessesLeft > 0, { restoring: true });
-        } else {
-            setResultMessage(guessesLeftMessage());
-            startTimer(saved.timeSpent || 0);
-            focusFirstOpenCell();
+            return 'resumed_finished';
         }
-        return;
+        setResultMessage(guessesLeftMessage());
+        startTimer(saved.timeSpent || 0);
+        focusFirstOpenCell();
+        return 'resumed';
     }
 
     clearGameState(storage);
     const puzzle = state.puzzles.find(p => p.id === state.puzzleID);
     if (!puzzle) {
         setResultMessage(LOAD_ERROR);
-        return;
+        return null;
     }
     startPuzzle(puzzle);
     state.guessesLeft = TOTAL_GUESSES;
     state.guessHistory = {};
+    state.started = false;
+    lastGuessAt = 0;
     drawPuzzle();
     setResultMessage(guessesLeftMessage());
     startTimer(0);
     focusFirstOpenCell();
+    return 'new';
+};
+
+// Load today's game and report how it opened.
+const loadGame = () => {
+    const loadState = resumeOrStart();
+    if (loadState) {
+        track(EVENTS.GAME_LOAD, { load_state: loadState, load_time_ms: Math.round(performance.now()) });
+    } else {
+        track(EVENTS.PUZZLE_LOAD_ERROR, { error_type: 'puzzle_missing', error_message: `No puzzle with id ${state.puzzleID}` });
+    }
 };
 
 // Admin override: clear all saved data and start today's puzzle afresh.
@@ -360,7 +495,7 @@ if (isLocal) window.__PSEUDOKU_ADMIN_RESET = () => {
     try { storage.clear(); } catch (e) { }
     $('check-button').hidden = false;
     $('share-button').hidden = true;
-    resumeOrStart();
+    loadGame();
     console.log('%cPseudoku: FULL game state and all saved data have been reset.', 'color: #6200ea; font-weight: bold;');
 };
 
@@ -378,6 +513,7 @@ const setupCluesSheet = () => {
 };
 
 const init = async () => {
+    setContextProvider(analyticsContext);
     settings = setupSettingsDialog(storage, setupDialog);
     setupStatsDialog(storage, () => state.puzzleDate || getPuzzleDate());
     const help = setupDialog($('help-modal'), $('help-button'), [$('help-close'), $('help-start')]);
@@ -388,6 +524,7 @@ const init = async () => {
     // First visit: show how to play once.
     let seenHelp = true;
     try { seenHelp = storage.getItem(HELP_SEEN_KEY) === '1'; } catch (e) { }
+    state.firstVisit = !seenHelp;
     if (!seenHelp) {
         try { storage.setItem(HELP_SEEN_KEY, '1'); } catch (e) { }
         help.open(null);
@@ -405,7 +542,12 @@ const init = async () => {
             showTime();
         }
     });
-    window.addEventListener('pagehide', saveGame);
+    window.addEventListener('pagehide', () => {
+        saveGame();
+        // Leaving part-way through: the drop-off point for the funnel.
+        if (gameStatus() === 'in_progress') track(EVENTS.PUZZLE_EXIT, { exit_type: 'pagehide' });
+    });
+    document.addEventListener('pseudoku:entry', onEntry);
     window.addEventListener('beforeunload', saveGame);
 
     try {
@@ -415,12 +557,13 @@ const init = async () => {
     } catch (error) {
         console.error('Error loading puzzles:', error);
         setResultMessage(LOAD_ERROR);
+        track(EVENTS.PUZZLE_LOAD_ERROR, { error_type: 'fetch_failed', error_message: String(error?.message || error) });
         return;
     }
     // The puzzle list is needed first: today's ID depends on its length.
     state.puzzleDate = getPuzzleDate();
     state.puzzleID = getPuzzleID(state.puzzles.length);
-    resumeOrStart();
+    loadGame();
 };
 
 init();

@@ -290,3 +290,25 @@ test('settings: defaults, and invalid saved values are ignored', async () => {
     storage.setItem(SETTINGS_KEY, '{not json');
     assert.deepEqual(readSettings(storage), DEFAULT_SETTINGS);
 });
+
+test('analytics: every push has the same shape and clears the last event_data', async () => {
+    const { createTracker, SCHEMA_VERSION, EVENTS } = await import('../js/analytics.js');
+    const layer = [];
+    const context = { puzzle: { puzzle_id: 3 }, game: { status: 'in_progress' }, player: { games_played: 1 }, app: { input_device: 'touch' } };
+    const { track } = createTracker({ target: layer, getContext: () => context });
+    track(EVENTS.GUESS_SUBMIT, { guess_number: 1 });
+    track(EVENTS.SHARE, { method: 'clipboard' });
+    assert.equal(layer.length, 4);
+    assert.deepEqual(layer[0], { event_data: null });
+    assert.deepEqual(layer[3], { event: 'share', schema_version: SCHEMA_VERSION, event_data: { method: 'clipboard' }, ...context });
+    assert.ok(Object.values(EVENTS).every(name => /^[a-z]+(_[a-z]+)*$/.test(name)), 'snake_case event names');
+});
+
+test('analytics: a failing context still sends the event', async () => {
+    const { createTracker } = await import('../js/analytics.js');
+    const layer = [];
+    const { track } = createTracker({ target: layer, getContext: () => { throw new Error('no state yet'); } });
+    track('game_load', { load_state: 'new' });
+    assert.equal(layer[1].event, 'game_load');
+    assert.equal(layer[1].puzzle, null);
+});

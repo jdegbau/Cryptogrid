@@ -39,13 +39,20 @@ export const nextBlankInput = (row, col) => {
     return ordered.find(i => i.value === '') || null;
 };
 
+// Tell the game a digit was tried (for analytics). `source` is 'keyboard'
+// or 'keypad'; `accepted` is false when it was refused as a repeat.
+const reportEntry = (input, source, accepted) =>
+    input.dispatchEvent(new CustomEvent('pseudoku:entry', { bubbles: true, detail: { source, accepted } }));
+
 // Put `digit` in `input` unless it was already guessed there, then move on
 // to the next blank cell. Returns whether the digit went in.
-export const enterDigit = (input, digit, getGuesses) => {
+export const enterDigit = (input, digit, getGuesses, source = 'keyboard') => {
     if (getGuesses().includes(digit)) {
         showDuplicateWarning(input.closest('.grid-cell'));
+        reportEntry(input, source, false);
         return false;
     }
+    reportEntry(input, source, true);
     input.value = digit;
     input.dispatchEvent(new Event('change', { bubbles: true }));
     const next = nextBlankInput(Number(input.dataset.row), Number(input.dataset.col));
@@ -140,7 +147,7 @@ export const setupKeypad = ({ getTarget, getHistory }) => {
             const input = getTarget();
             if (!input) return;
             if (value === 'erase') clearDigit(input);
-            else if (!enterDigit(input, value, () => getHistory(input).map(h => h.value))) input.focus();
+            else if (!enterDigit(input, value, () => getHistory(input).map(h => h.value), 'keypad')) input.focus();
             if (document.activeElement === key) input.focus({ preventScroll: true });
         });
         pad.appendChild(key);

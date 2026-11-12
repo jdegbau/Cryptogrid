@@ -130,25 +130,29 @@ const showCopyDialog = (text, opener) => {
 };
 
 // Share `{ text, url }` from `button` (used to confirm and to return focus).
+// Resolves to how it went: 'share_sheet', 'share_cancelled', 'clipboard'
+// or 'manual_copy' (shown to copy by hand), for analytics.
 export const shareText = async (share, button) => {
     if (useShareSheet()) {
         try {
             await navigator.share(share.url ? { text: share.text, url: share.url } : { text: share.text });
-            return;
+            return 'share_sheet';
         } catch (err) {
-            if (err.name === 'AbortError') return;
+            if (err.name === 'AbortError') return 'share_cancelled';
             // Share sheet failed to open: fall through to copying.
         }
     }
-    await copyOrShow(withLink(share), button);
+    return copyOrShow(withLink(share), button);
 };
 
 // Copy `text`, or show it to copy by hand if the browser won't.
+// Resolves to 'clipboard' or 'manual_copy'.
 export const copyOrShow = async (text, button) => {
     if (await copyText(text)) {
         flashLabel(button, 'Copied ✓');
         showToast('Copied to clipboard!');
-    } else {
-        showCopyDialog(text, button);
+        return 'clipboard';
     }
+    showCopyDialog(text, button);
+    return 'manual_copy';
 };
