@@ -1,4 +1,5 @@
 // Small page-level UI pieces: result line, toast, dialogs and end-game effects.
+import { track, EVENTS } from './analytics.js';
 
 export const prefersReducedMotion = () =>
     window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -51,14 +52,22 @@ export const updateGuessIcons = (guessesLeft, totalGuesses) => {
     guesses.title = `${guessesLeft} of ${totalGuesses} guesses left`;
 };
 
+// 'help', 'stats', 'settings', 'clues' or 'copy', from the dialog's id.
+export const dialogName = (dialog) => dialog.id.replace(/-modal$/, '');
+
 // Wire up a <dialog>: open from `openButton`, close from the close button,
 // a tap on the backdrop, or Escape; focus goes back to the opener.
 export const setupDialog = (dialog, openButton, closeButtons, onOpen) => {
     let opener = null;
+    // `from` is null when the game opens it itself (help on a first visit).
     const open = (from = openButton) => {
         opener = from;
         dialog.showModal();
         onOpen?.();
+        track(EVENTS.DIALOG_OPEN, {
+            dialog_name: dialogName(dialog),
+            trigger: from === null ? 'auto' : from === openButton ? 'button' : 'fallback'
+        });
     };
     openButton?.addEventListener('click', () => open(openButton));
     closeButtons.forEach(btn => btn.addEventListener('click', () => dialog.close()));

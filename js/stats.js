@@ -3,6 +3,7 @@
 import { readStats, summarizeStats, guessDistribution, dailySeries, encodeStatsBackup, importStatsBackup } from './storage.js';
 import { formatTime } from './date.js';
 import { buildStatsShare, shareText, copyOrShow, gameUrl } from './share.js';
+import { track, EVENTS } from './analytics.js';
 
 const CHART_JS_SRC = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js';
 const CHART_JS_INTEGRITY = 'sha384-dug+JxfBvklEQdJ4AYuBBAIScUz0bVN73xpy273gcAwHjb3qI0fXmuYNaNfdyYJG';
@@ -164,16 +165,27 @@ export const setupStatsDialog = (storage, getToday) => {
     const chartArea = document.getElementById('stats-charts');
     const shareButton = document.getElementById('stats-share');
     let share = null;
-    shareButton.addEventListener('click', () => { if (share) shareText(share, shareButton); });
+    shareButton.addEventListener('click', async () => {
+        if (!share) return;
+        const method = await shareText(share, shareButton);
+        track(EVENTS.SHARE, { content_type: 'stats', method });
+    });
 
     // Backup codes for moving stats between devices.
     const exportButton = document.getElementById('stats-export');
     const importButton = document.getElementById('stats-import');
     const importCode = document.getElementById('stats-import-code');
     const importStatus = document.getElementById('stats-import-status');
-    exportButton.addEventListener('click', () => copyOrShow(encodeStatsBackup(readStats(storage)), exportButton));
+    exportButton.addEventListener('click', async () => {
+        const history = readStats(storage);
+        const method = await copyOrShow(encodeStatsBackup(history), exportButton);
+        track(EVENTS.STATS_EXPORT, { method, games_exported: history.length });
+    });
     importButton.addEventListener('click', () => {
         const result = importStatsBackup(storage, importCode.value);
+        track(EVENTS.STATS_IMPORT, result
+            ? { import_result: result.added ? 'added' : 'nothing_new', games_added: result.added, games_total: result.total }
+            : { import_result: 'invalid_code', games_added: 0 });
         if (!result) {
             importStatus.textContent = "That doesn't look like a backup code. Copy the whole code and try again.";
             return;
@@ -214,6 +226,7 @@ export const setupStatsDialog = (storage, getToday) => {
         importStatus.textContent = '';
         dialog.showModal();
         refresh();
+        track(EVENTS.DIALOG_OPEN, { dialog_name: 'stats', trigger: 'button' });
     };
 
     openButton.addEventListener('click', open);

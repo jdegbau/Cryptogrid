@@ -1,6 +1,7 @@
 // Player settings: theme, high-contrast colours and hiding the timer.
 // Saved in storage and applied as attributes on <html>, which the CSS reads.
 // A small inline script in index.html applies them before first paint.
+import { track, EVENTS } from './analytics.js';
 
 export const SETTINGS_KEY = 'pseudokuSettings';
 export const THEMES = ['system', 'light', 'dark'];
@@ -17,6 +18,9 @@ export const readSettings = (storage) => {
         hideTimer: saved.hideTimer === true
     };
 };
+
+// Names used in analytics.
+const SETTING_NAMES = { theme: 'theme', highContrast: 'high_contrast', hideTimer: 'hide_timer' };
 
 export const writeSettings = (storage, settings) => {
     try { storage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { }
@@ -55,6 +59,7 @@ export const setupSettingsDialog = (storage, setupDialog) => {
     };
 
     form.addEventListener('change', () => {
+        const before = settings;
         settings = {
             theme: form.elements.theme.value,
             highContrast: form.elements.highContrast.checked,
@@ -62,6 +67,9 @@ export const setupSettingsDialog = (storage, setupDialog) => {
         };
         writeSettings(storage, settings);
         applySettings(settings);
+        Object.keys(settings).forEach(key => {
+            if (settings[key] !== before[key]) track(EVENTS.SETTING_CHANGE, { setting_name: SETTING_NAMES[key], setting_value: String(settings[key]) });
+        });
     });
     form.addEventListener('submit', (e) => e.preventDefault());
 
