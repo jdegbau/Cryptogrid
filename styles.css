@@ -1802,6 +1802,155 @@ svg .fill {
 }
 
 /* ==========================================================================
+   Solved lines: when a guess completes a row or column, a short animation
+   themed on its clue plays over it (see lineEffects.js).
+   ========================================================================== */
+.grid-cells { position: relative; }
+
+.line-fx {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 4;
+    animation: line-fx-out 0.35s ease 1.4s forwards;
+}
+.line-fx-svg {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;   /* the global svg rule sizes icons */
+    height: 100%;
+    overflow: visible;
+}
+.line-fx-stroke {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 3.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    filter: drop-shadow(0 0 4px color-mix(in srgb, var(--accent) 55%, transparent));
+    animation: line-fx-draw 0.55s cubic-bezier(.45,.05,.3,1) both;
+}
+.line-fx-head { fill: var(--accent); }
+.line-fx-dot {
+    fill: var(--accent);
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: line-fx-pop 0.35s cubic-bezier(.3,1.6,.5,1) both;
+}
+@keyframes line-fx-draw { to { stroke-dashoffset: 0; } }
+@keyframes line-fx-out { to { opacity: 0; } }
+
+/* Chips: the label, the plus signs between cells, and arrows */
+.line-fx-label,
+.line-fx-plus,
+.line-fx-arrow {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    animation: line-fx-chip 0.4s cubic-bezier(.3,1.6,.5,1) both;
+}
+.line-fx-label {
+    padding: 4px 11px;
+    border-radius: 999px;
+    background: var(--primary-bg);
+    color: var(--on-primary);
+    font-size: 0.85rem;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: var(--shadow-md);
+}
+.line-fx-plus {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent);
+    color: var(--surface);
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1;
+}
+.line-fx-arrow {
+    color: var(--accent);
+    font-size: 0.85rem;
+    animation: line-fx-travel 0.9s ease-out both;
+}
+@keyframes line-fx-chip {
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+@keyframes line-fx-travel {
+    0% { transform: translate(-50%, -50%); opacity: 0; }
+    25% { opacity: 1; }
+    100% { transform: translate(-50%, calc(-50% + var(--fx-travel, -20px))); opacity: 0; }
+}
+@keyframes line-fx-pop {
+    0% { transform: scale(0); }
+    100% { transform: scale(1); }
+}
+
+/* The solved line's row number or column letter */
+.row-label.label-solved,
+.column-label.label-solved {
+    animation: label-solved 1.6s ease both;
+}
+@keyframes label-solved {
+    0%, 100% { color: var(--text-muted); background: transparent; }
+    15%, 70% { color: var(--on-primary); background: var(--primary-bg); }
+}
+
+/* What the cells do */
+.grid-cell.fx-pop,
+.grid-cell.fx-rise,
+.grid-cell.fx-sink,
+.grid-cell.fx-up,
+.grid-cell.fx-down,
+.grid-cell.fx-ring { z-index: 2; }
+.grid-cell.fx-pop { animation: fx-pop 0.5s cubic-bezier(.3,1.5,.5,1) var(--fx-delay, 0s) both; }
+.grid-cell.fx-rise { animation: fx-rise 0.7s cubic-bezier(.3,1.4,.5,1) var(--fx-delay, 0s) both; }
+.grid-cell.fx-sink { animation: fx-sink 0.7s cubic-bezier(.3,1.4,.5,1) var(--fx-delay, 0s) both; }
+.grid-cell.fx-up { animation: fx-up 0.6s cubic-bezier(.3,1.4,.5,1) var(--fx-delay, 0s) both; }
+.grid-cell.fx-down { animation: fx-down 0.6s cubic-bezier(.3,1.4,.5,1) var(--fx-delay, 0s) both; }
+.grid-cell.fx-ring { animation: fx-ring 0.9s ease-out var(--fx-delay, 0s) both; }
+.grid-cell.fx-dim .grid-cell-content { animation: fx-dim 1.4s ease both; }
+@keyframes fx-pop {
+    0%, 100% { transform: none; }
+    40% { transform: scale(1.12); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 50%, transparent); }
+}
+@keyframes fx-rise {
+    0%, 100% { transform: none; }
+    45% { transform: translateY(-9px); }
+}
+@keyframes fx-sink {
+    0%, 100% { transform: none; }
+    45% { transform: translateY(9px); }
+}
+@keyframes fx-up {
+    0%, 100% { transform: none; }
+    45% { transform: translateY(-7px) rotate(-4deg); }
+}
+@keyframes fx-down {
+    0%, 100% { transform: none; }
+    45% { transform: translateY(7px) rotate(4deg); }
+}
+@keyframes fx-ring {
+    0%, 100% { transform: none; box-shadow: none; }
+    35% {
+        transform: scale(1.1);
+        box-shadow: 0 0 0 3.5px var(--fx-colour, var(--accent)),
+                    0 0 18px color-mix(in srgb, var(--fx-colour, var(--accent)) 50%, transparent);
+    }
+}
+@keyframes fx-dim {
+    0%, 100% { opacity: 1; }
+    30%, 70% { opacity: 0.45; }
+}
+
+/* ==========================================================================
    Reduced motion: no shakes, bounces, scaling or rain
    ========================================================================== */
 @media (prefers-reduced-motion: reduce) {
@@ -1816,7 +1965,8 @@ svg .fill {
     }
 
     .confetti-canvas,
-    .defeat-vignette {
+    .defeat-vignette,
+    .line-fx {
         display: none;
     }
 }

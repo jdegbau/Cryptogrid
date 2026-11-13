@@ -4,8 +4,9 @@ import { getAnswerGrid } from './encoding.js';
 import { readGameState, readAnyGameState, writeGameState, clearGameState, recordResult, readStats, summarizeStats, STATS_VERSION } from './storage.js';
 import {
     cellKey, editableInputs, renderGrid, renderClues, readUserSolution, readCellStates,
-    isSolved, markGuesses, revealAnswers, restoreCells, gridEmojis, highlightClues, updateEdited
+    isSolved, markGuesses, revealAnswers, restoreCells, gridEmojis, highlightClues, updateEdited, solvedCells
 } from './grid.js';
+import { newlySolvedLines, playLineEffects } from './lineEffects.js';
 import { createCellInput, attachGuessPopover, setupKeypad, guessQuality } from './input.js';
 import {
     setResultMessage, setEndResult, updateGuessIcons, setupDialog,
@@ -404,6 +405,7 @@ const checkSolution = () => {
     inputs.forEach(input => {
         scored[guessQuality(input.value, state.answerGrid[Number(input.dataset.row)][Number(input.dataset.col)])]++;
     });
+    const solvedBefore = solvedCells();
     markGuesses(state.answerGrid);
     const now = elapsedMs();
     const guessData = {
@@ -436,6 +438,9 @@ const checkSolution = () => {
             const left = state.guessesLeft === 1 ? '1 guess left' : `${state.guessesLeft} guesses left`;
             setResultMessage(`Not quite. ${left}.`);
             focusFirstOpenCell();
+            // Rows and columns this guess completed get a little moment of
+            // their own. A win or loss has its own effect instead.
+            playLineEffects(newlySolvedLines(solvedBefore, solvedCells()), state.puzzle, state.answerGrid);
         }
     }
     keypad?.update();

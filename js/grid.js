@@ -209,6 +209,17 @@ export const readCellStates = () => {
     return states;
 };
 
+// Which cells are settled: given, or guessed correctly (4x4 booleans).
+export const solvedCells = () => {
+    const solved = [];
+    allCells().forEach(cell => {
+        const row = Number(cell.dataset.row);
+        solved[row] = solved[row] || [];
+        solved[row][Number(cell.dataset.col)] = cell.classList.contains('preset') || cell.classList.contains('correct');
+    });
+    return solved;
+};
+
 export const isSolved = (userSolution, answerGrid) =>
     answerGrid.every((row, r) => row.every((value, c) => userSolution[r][c] === value));
 
