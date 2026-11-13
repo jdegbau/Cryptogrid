@@ -264,7 +264,12 @@ const playOne = (grid, line, rule, values) => {
     setTimeout(() => {
         layer.remove();
         label?.classList.remove('label-solved');
-        cells.forEach(cell => cell.classList.remove(...FX_CLASSES));
+        cells.forEach(cell => {
+            cell.classList.remove(...FX_CLASSES);
+            cell.style.removeProperty('--fx-delay');
+            cell.style.removeProperty('--fx-colour');
+            if (!cell.getAttribute('style')) cell.removeAttribute('style');
+        });
     }, LIFETIME_MS);
 };
 
