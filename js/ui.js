@@ -1,5 +1,9 @@
-// Small page-level UI pieces: result line, toast, dialogs and end-game effects.
+// Small page-level UI pieces: result line, toast and dialogs. End-game
+// effects live in effects.js.
 import { track, EVENTS } from './analytics.js';
+import { createResultBadge } from './effects.js';
+
+export { playWinEffect, playLoseEffect } from './effects.js';
 
 export const prefersReducedMotion = () =>
     window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -10,19 +14,17 @@ export const setResultMessage = (message) => {
     result.textContent = message;
 };
 
-// Result line with a leading emoji; `animation` is 'win', 'lose' or null.
-export const setEndResult = (message, signifier, animation) => {
+// Result card with a badge on top. `kind` is 'win' or 'lose'; `animate` is
+// false when restoring a finished game, so it shows without the entrance.
+export const setEndResult = (message, kind, animate) => {
     const result = document.getElementById('result');
     result.classList.add('result-end');
+    result.classList.toggle('result-enter', Boolean(animate));
     result.textContent = '';
-    const icon = document.createElement('span');
-    icon.className = 'result-signifier';
-    if (animation) icon.classList.add(`result-animate-${animation}`);
-    icon.setAttribute('aria-hidden', 'true');
-    icon.textContent = signifier;
     const text = document.createElement('span');
+    text.className = 'result-text';
     text.textContent = message;
-    result.append(icon, text);
+    result.append(createResultBadge(kind, animate), text);
 };
 
 let toastTimer;
@@ -76,42 +78,6 @@ export const setupDialog = (dialog, openButton, closeButtons, onOpen) => {
     });
     dialog.addEventListener('close', () => opener?.focus?.());
     return { open };
-};
-
-const removeAfter = (el, ms) => setTimeout(() => el.remove(), ms);
-
-export const playWinEffect = () => {
-    if (prefersReducedMotion()) return;
-    document.querySelector('.emoji-rain')?.remove();
-    const rain = document.createElement('div');
-    rain.className = 'emoji-rain';
-    rain.setAttribute('aria-hidden', 'true');
-    for (let i = 0; i < 28; i++) {
-        const drop = document.createElement('span');
-        drop.className = 'emoji-raindrop';
-        drop.textContent = '🎉';
-        drop.style.left = `${Math.random() * 90 + 5}%`;
-        drop.style.animationDuration = `${1.2 + Math.random() * 0.9}s`;
-        drop.style.animationDelay = `${Math.random() * 0.7}s`;
-        drop.style.fontSize = `${1.5 + Math.random() * 1.2}em`;
-        rain.appendChild(drop);
-    }
-    document.body.appendChild(rain);
-    removeAfter(rain, 2200);
-};
-
-export const playLoseEffect = () => {
-    if (prefersReducedMotion()) return;
-    document.querySelector('.emoji-overlay')?.remove();
-    const overlay = document.createElement('div');
-    overlay.className = 'emoji-overlay';
-    overlay.setAttribute('aria-hidden', 'true');
-    const inner = document.createElement('span');
-    inner.className = 'emoji-overlay-inner';
-    inner.textContent = '❌';
-    overlay.appendChild(inner);
-    document.body.appendChild(overlay);
-    removeAfter(overlay, 2200);
 };
 
 export const shake = (elements) => {

@@ -317,7 +317,7 @@ const endGame = (won, { restoring = false } = {}) => {
     shareButton.hidden = false;
     shareButton.classList.toggle('glow', !restoring);
 
-    setEndResult(won ? WIN_MESSAGE : LOSE_MESSAGE, won ? '🎉' : '❌', restoring ? null : (won ? 'win' : 'lose'));
+    setEndResult(won ? WIN_MESSAGE : LOSE_MESSAGE, won ? 'win' : 'lose', !restoring);
     editableInputs().forEach(input => { input.disabled = true; });
     $('keypad').hidden = true;
     $('active-clues').classList.add('concealed');
