@@ -312,3 +312,42 @@ test('analytics: a failing context still sends the event', async () => {
     assert.equal(layer[1].event, 'game_load');
     assert.equal(layer[1].puzzle, null);
 });
+
+import { lineValues, solvedLines, newlySolvedLines, planLineEffect } from '../js/lineEffects.js';
+
+test('line effects: finds the rows and columns a guess just completed', () => {
+    const grid = [[1, 8, 3, 6], [4, 6, 6, 4], [1, 7, 1, 8], [6, 4, 8, 2]];
+    assert.deepEqual(lineValues(grid, { kind: 'row', index: 1 }), [4, 6, 6, 4]);
+    assert.deepEqual(lineValues(grid, { kind: 'col', index: 1 }), [8, 6, 7, 4]);
+
+    const T = true, F = false;
+    const before = [[T, F, T, T], [T, T, F, T], [T, T, T, F], [F, T, T, F]];
+    const after = [[T, T, T, T], [T, T, T, T], [T, T, T, F], [F, T, T, F]];
+    assert.deepEqual(solvedLines(before), []);
+    assert.deepEqual(newlySolvedLines(before, after), [
+        { kind: 'row', index: 0 }, { kind: 'row', index: 1 },
+        { kind: 'col', index: 1 }, { kind: 'col', index: 2 }
+    ]);
+    // Already-solved lines don't play again.
+    assert.deepEqual(newlySolvedLines(after, after), []);
+});
+
+test('line effects: every clue type has a themed effect and an accurate label', () => {
+    const plan = (rule, values) => planLineEffect(rule, values);
+    assert.deepEqual(plan({ rule: 'palindromic' }, [4, 6, 6, 4]), { type: 'mirror', label: null });
+    assert.equal(plan({ rule: 'sum', target: 25 }, [8, 6, 7, 4]).label, '= 25');
+    assert.equal(plan({ rule: 'sum_even' }, [3, 6, 1, 8]).label, '= 18, even');
+    assert.equal(plan({ rule: 'sum_odd' }, [1, 7, 1, 8]).label, '= 17, odd');
+    assert.equal(plan({ rule: 'above_threshold', target: 5 }, [6, 7, 8, 9]).label, 'All > 5');
+    assert.equal(plan({ rule: 'below_threshold', target: 5 }, [1, 2, 3, 4]).label, 'All < 5');
+    assert.equal(plan({ rule: 'increasing' }, [1, 3, 3, 7]).label, '1 ≤ 3 ≤ 3 ≤ 7');
+    assert.equal(plan({ rule: 'decreasing' }, [9, 6, 2, 2]).label, '9 ≥ 6 ≥ 2 ≥ 2');
+    assert.deepEqual(plan({ rule: 'majority_even' }, [2, 4, 5, 6]), { type: 'majority', match: [0, 1, 3], label: '3 of 4 even' });
+    assert.deepEqual(plan({ rule: 'majority_odd' }, [1, 3, 5, 7]).match, [0, 1, 2, 3]);
+    assert.equal(plan({ rule: 'mystery' }, [1, 2, 3, 4]).type, 'sweep');
+
+    // No clue type falls through to the generic effect.
+    for (const rule of Object.keys(ruleChecks)) {
+        assert.notEqual(plan({ rule, target: 5 }, [1, 2, 3, 4]).type, 'sweep', rule);
+    }
+});
