@@ -1586,82 +1586,165 @@ svg .fill {
 /* ==========================================================================
    End-of-game effects
    ========================================================================== */
-.result-signifier {
-    display: inline-block;
-    font-size: 2.2em;
-    line-height: 1.1;
+/* Result card: slides up, and its badge draws itself in. */
+.result.result-enter {
+    animation: result-rise 0.55s cubic-bezier(.2,.9,.3,1.15) both;
 }
 
-.result-animate-win {
-    animation: pop-bounce 0.7s cubic-bezier(.23,1.32,.59,.99);
+@keyframes result-rise {
+    0% { opacity: 0; transform: translateY(14px) scale(0.96); }
+    100% { opacity: 1; transform: none; }
 }
 
-.result-animate-lose {
-    animation: shake-lose 0.6s cubic-bezier(.36,.07,.19,.97);
+.result-badge {
+    width: 60px;
+    height: 60px;
+    overflow: visible;
+    margin-bottom: 4px;
 }
 
-@keyframes pop-bounce {
-    0% { transform: scale(0.2); opacity: 0; }
-    60% { transform: scale(1.3); opacity: 1; }
-    80% { transform: scale(0.95); }
+.result-badge .badge-disc { fill: var(--badge-bg); }
+.result-badge .badge-ring,
+.result-badge .badge-mark,
+.result-badge .badge-rays line {
+    fill: none;
+    stroke: var(--badge-fg);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.result-badge .badge-ring { stroke-width: 3; }
+.result-badge .badge-mark { stroke-width: 4.5; stroke-dasharray: 1; stroke-dashoffset: 0; }
+.result-badge .badge-rays line { stroke-width: 3; opacity: 0; }
+
+.result-badge-win { --badge-bg: var(--correct-bg); --badge-fg: var(--correct-text); }
+.result-badge-lose { --badge-bg: var(--incorrect-bg); --badge-fg: var(--incorrect-text); }
+
+.result-badge-animate .badge-disc {
+    transform-origin: 32px 32px;
+    animation: badge-disc 0.5s cubic-bezier(.3,1.6,.5,1) 0.15s both;
+}
+.result-badge-animate .badge-ring {
+    stroke-dasharray: 1;
+    transform-origin: 32px 32px;
+    transform: rotate(-90deg);
+    animation: badge-draw 0.5s cubic-bezier(.6,0,.3,1) both;
+}
+.result-badge-animate .badge-mark {
+    animation: badge-draw 0.35s cubic-bezier(.6,0,.4,1) 0.5s both;
+}
+.result-badge-animate .badge-mark-2 { animation-delay: 0.7s; }
+.result-badge-animate .badge-rays {
+    transform-origin: 32px 32px;
+    animation: badge-rays 0.7s cubic-bezier(.2,.8,.3,1) 0.75s both;
+}
+.result-badge-animate .badge-rays line {
+    animation: badge-rays-fade 0.7s ease-out 0.75s both;
+}
+.result-badge-lose.result-badge-animate {
+    animation: badge-thud 0.5s cubic-bezier(.36,.07,.19,.97) 0.95s both;
+}
+
+@keyframes badge-disc {
+    0% { transform: scale(0); }
     100% { transform: scale(1); }
 }
-
-@keyframes shake-lose {
-    0% { transform: translateX(0); }
-    20% { transform: translateX(-10px); }
-    40% { transform: translateX(10px); }
-    60% { transform: translateX(-8px); }
-    80% { transform: translateX(8px); }
-    100% { transform: translateX(0); }
+@keyframes badge-draw {
+    0% { stroke-dashoffset: 1; }
+    100% { stroke-dashoffset: 0; }
+}
+@keyframes badge-rays {
+    0% { transform: scale(0.7); }
+    100% { transform: scale(1.35); }
+}
+@keyframes badge-rays-fade {
+    0%, 100% { opacity: 0; }
+    25% { opacity: 1; }
+}
+@keyframes badge-thud {
+    0%, 100% { transform: none; }
+    20% { transform: translateX(-5px) rotate(-6deg); }
+    45% { transform: translateX(4px) rotate(4deg); }
+    70% { transform: translateX(-2px) rotate(-2deg); }
 }
 
-.emoji-rain {
+/* Win: once the last guess has flipped in, each cell lifts and glows in a
+   diagonal wave from the top-left corner. */
+.grid-cell.cell-celebrate {
+    animation: cell-celebrate 0.75s cubic-bezier(.3,1.5,.5,1) var(--wave-delay, 0s) both;
+    z-index: 1;
+}
+.grid-cell.cell-celebrate .grid-cell-content {
+    animation: cell-shine 0.75s ease-out var(--wave-delay, 0s) both;
+}
+
+@keyframes cell-celebrate {
+    0%, 100% { transform: none; }
+    40% { transform: translateY(-8px) scale(1.1); }
+    70% { transform: translateY(1px) scale(0.98); }
+}
+@keyframes cell-shine {
+    0%, 100% { box-shadow: none; filter: none; }
+    40% {
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--correct-text) 45%, transparent),
+                    0 8px 22px color-mix(in srgb, var(--correct-text) 35%, transparent);
+        filter: brightness(1.08) saturate(1.2);
+    }
+}
+
+/* Loss: the grid shudders as the answers flip in, then each revealed answer
+   lights up in turn so it is clear which numbers were missed. */
+.grid-cells.grid-defeat {
+    animation: grid-defeat 0.7s cubic-bezier(.36,.07,.19,.97) 0.2s both;
+}
+@keyframes grid-defeat {
+    0%, 100% { transform: none; }
+    15% { transform: translateX(-7px); }
+    30% { transform: translateX(6px); }
+    45% { transform: translateX(-4px); }
+    60% { transform: translateX(3px); }
+    75% { transform: translateX(-1px); }
+}
+
+.grid-cell.revealed.cell-spotlight {
+    animation: cell-spotlight 0.9s ease-out var(--wave-delay, 0s) both;
+    z-index: 1;
+}
+.grid-cell.cell-spotlight:not(.revealed) .grid-cell-content {
+    animation: cell-dim 1.6s ease both;
+}
+@keyframes cell-spotlight {
+    0%, 100% { transform: none; box-shadow: none; }
+    35% {
+        transform: scale(1.08);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--revealed-text) 50%, transparent),
+                    0 6px 18px color-mix(in srgb, var(--revealed-text) 30%, transparent);
+    }
+}
+@keyframes cell-dim {
+    0%, 100% { opacity: 1; }
+    30%, 70% { opacity: 0.55; }
+}
+
+.confetti-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
     pointer-events: none;
+}
+
+.defeat-vignette {
     position: fixed;
     inset: 0;
     z-index: 9999;
-    overflow: hidden;
-}
-
-.emoji-raindrop {
-    position: absolute;
-    top: 0;
-    font-size: 2.2em;
-    will-change: transform, opacity;
-    user-select: none;
     pointer-events: none;
-    animation: emoji-fall 1.5s linear forwards;
+    background: radial-gradient(ellipse at center, transparent 55%, color-mix(in srgb, var(--incorrect-text) 22%, transparent) 100%);
+    animation: vignette 1.8s ease both;
 }
-
-@keyframes emoji-fall {
-    0% { transform: translateY(-10vh) scale(0.7) rotate(-10deg); opacity: 0.7; }
-    10% { opacity: 1; }
-    90% { opacity: 1; }
-    100% { transform: translateY(100vh) scale(1.1) rotate(10deg); opacity: 0; }
-}
-
-.emoji-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 10000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-    animation: overlay-fade 1.6s ease both;
-}
-
-.emoji-overlay-inner {
-    font-size: 6em;
-    animation: pop-bounce 0.7s cubic-bezier(.23,1.32,.59,.99);
-}
-
-@keyframes overlay-fade {
-    0% { opacity: 0; }
-    10% { opacity: 1; }
-    80% { opacity: 1; }
-    100% { opacity: 0; }
+@keyframes vignette {
+    0%, 100% { opacity: 0; }
+    20%, 55% { opacity: 1; }
 }
 
 /* ==========================================================================
@@ -1732,8 +1815,8 @@ svg .fill {
         scroll-behavior: auto !important;
     }
 
-    .emoji-rain,
-    .emoji-overlay {
+    .confetti-canvas,
+    .defeat-vignette {
         display: none;
     }
 }
