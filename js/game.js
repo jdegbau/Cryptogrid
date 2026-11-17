@@ -429,7 +429,7 @@ const checkSolution = () => {
 
     if (solved) {
         // The rows and columns the winning guess completed get their moment
-        // first; the win celebration follows once they're done.
+        // too. Confetti starts right away; the cell wave waits for them.
         const lineFxMs = playLineEffects(newlySolvedLines(solvedBefore, solvedCells()), state.puzzle, state.answerGrid);
         endGame(true, { celebrateAfterMs: lineFxMs });
     } else {
