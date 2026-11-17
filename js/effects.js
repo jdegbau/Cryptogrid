@@ -208,7 +208,8 @@ const launchConfetti = (bursts) => {
 
 const FLIP_SETTLE_MS = 900; // the guess flip across the grid (see grid.js)
 
-export const playWinEffect = () => {
+// `afterMs` holds the celebration back, e.g. until solved-line effects end.
+export const playWinEffect = (afterMs = 0) => {
     if (prefersReducedMotion()) return;
     setTimeout(() => {
         waveGrid('cell-celebrate', 70);
@@ -225,7 +226,7 @@ export const playWinEffect = () => {
             { x: -10, y: h + 10, angle: -Math.PI / 2 + 0.55, spread: 0.7, count: 70, speed: 1500, delay: 380 },
             { x: w + 10, y: h + 10, angle: -Math.PI / 2 - 0.55, spread: 0.7, count: 70, speed: 1500, delay: 380 }
         ]);
-    }, FLIP_SETTLE_MS);
+    }, Math.max(FLIP_SETTLE_MS, afterMs));
 };
 
 export const playLoseEffect = () => {

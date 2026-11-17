@@ -78,9 +78,12 @@ export const planLineEffect = (rule, values) => {
 // --- Drawing ---
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
+// Every delay inside an effect is stretched by this much; the CSS durations
+// in styles.css are stretched to match.
+const PACE = 1.3;
 const START_MS = 900;     // after the guess has flipped in (see grid.js)
-const STAGGER_MS = 1000;  // between lines completed by the same guess, so labels never overlap
-const LIFETIME_MS = 1800; // how long one effect stays up (the fade starts at 1.4 s; see styles.css)
+const STAGGER_MS = 1300;  // between lines completed by the same guess, so labels never overlap
+const LIFETIME_MS = 2300; // how long one effect stays up (the fade starts at 1.8 s; see styles.css)
 
 const svgEl = (tag, attrs) => {
     const el = document.createElementNS(SVG_NS, tag);
@@ -102,7 +105,7 @@ const measure = (grid, cells) => {
 
 // Restart a CSS animation class on a cell, `delay` ms in.
 const animateCell = (cell, className, delay, vars = {}) => {
-    cell.style.setProperty('--fx-delay', `${delay}ms`);
+    cell.style.setProperty('--fx-delay', `${delay * PACE}ms`);
     Object.entries(vars).forEach(([k, v]) => cell.style.setProperty(k, v));
     cell.classList.remove(className);
     void cell.offsetWidth;
@@ -122,7 +125,7 @@ const linePath = (pts, isRow, offset) => pts.map((p, i) => {
 
 const drawPath = (svg, d, delay, extra = {}) => {
     const path = svgEl('path', { d, class: 'line-fx-stroke', pathLength: 1, ...extra });
-    path.style.animationDelay = `${delay}ms`;
+    path.style.animationDelay = `${delay * PACE}ms`;
     svg.appendChild(path);
     return path;
 };
@@ -133,7 +136,7 @@ const addChip = (layer, text, className, x, y, delay) => {
     chip.textContent = text;
     chip.style.left = `${x}px`;
     chip.style.top = `${y}px`;
-    chip.style.animationDelay = `${delay}ms`;
+    chip.style.animationDelay = `${delay * PACE}ms`;
     layer.appendChild(chip);
     return chip;
 };
@@ -178,7 +181,7 @@ const playOne = (grid, line, rule, values) => {
                         cy: isRow ? P.y - P.h * 0.32 : P.y,
                         r: 4
                     });
-                    dot.style.animationDelay = `${k * 260}ms`;
+                    dot.style.animationDelay = `${k * 260 * PACE}ms`;
                     svg.appendChild(dot);
                 });
                 animateCell(cells[a], 'fx-pop', k * 260 + 380);
@@ -274,13 +277,19 @@ const playOne = (grid, line, rule, values) => {
 };
 
 // Play the effects for lines a guess just completed, one after another.
+// Returns how long, in ms from now, until the last one has finished (0 if
+// none play), so a win can hold its celebration until then.
 export const playLineEffects = (lines, { rowRules, colRules }, answerGrid) => {
-    if (!lines.length || prefersReducedMotion()) return;
+    if (!lines.length || prefersReducedMotion()) return 0;
     const grid = document.getElementById('grid-cells');
-    if (!grid) return;
-    lines.forEach((line, k) => {
+    if (!grid) return 0;
+    let played = 0;
+    lines.forEach((line) => {
         const rule = (line.kind === 'row' ? rowRules : colRules)[line.index];
         if (!rule) return;
-        setTimeout(() => playOne(grid, line, rule, lineValues(answerGrid, line)), START_MS + k * STAGGER_MS);
+        const at = START_MS + played * STAGGER_MS;
+        played++;
+        setTimeout(() => playOne(grid, line, rule, lineValues(answerGrid, line)), at);
     });
+    return played ? START_MS + (played - 1) * STAGGER_MS + LIFETIME_MS : 0;
 };
