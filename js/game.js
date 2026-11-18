@@ -7,6 +7,7 @@ import {
     isSolved, markGuesses, revealAnswers, restoreCells, gridEmojis, highlightClues, updateEdited, solvedCells
 } from './grid.js';
 import { newlySolvedLines, playLineEffects } from './lineEffects.js';
+import { rollInNumbers } from './rollIn.js';
 import { createCellInput, attachGuessPopover, setupKeypad, guessQuality } from './input.js';
 import {
     setResultMessage, setEndResult, updateGuessIcons, setupDialog,
@@ -521,6 +522,10 @@ const resumeOrStart = () => {
 const loadGame = () => {
     const loadState = resumeOrStart();
     if (loadState) {
+        // On a first visit the help sheet covers the grid: roll once it closes.
+        const help = $('help-modal');
+        if (help.open) help.addEventListener('close', rollInNumbers, { once: true });
+        else rollInNumbers();
         track(EVENTS.GAME_LOAD, { load_state: loadState, load_time_ms: Math.round(performance.now()) });
     } else {
         track(EVENTS.PUZZLE_LOAD_ERROR, { error_type: 'puzzle_missing', error_message: `No puzzle with id ${state.puzzleID}` });

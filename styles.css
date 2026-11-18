@@ -1952,6 +1952,47 @@ svg .fill {
 }
 
 /* ==========================================================================
+   Load roll: numbers on the grid spin through digits and land on their value
+   (see js/rollIn.js). The reel sits over the content, whose own text is
+   hidden until it lands.
+   ========================================================================== */
+.grid-cell.rolling .grid-cell-content { color: transparent; }
+
+.cell-roll {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: calc(var(--cell) * 0.46);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+}
+.cell-roll-strip {
+    --roll-line: 1.2em;
+    position: absolute; /* top is set from the number's text box */
+    left: 0;
+    right: 0;
+    height: var(--roll-line);
+    line-height: var(--roll-line);
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(transparent, #000 20%, #000 80%, transparent);
+    mask-image: linear-gradient(transparent, #000 20%, #000 80%, transparent);
+}
+.cell-roll-strip span {
+    display: block;
+    text-align: center;
+    animation: roll-spin 0.8s cubic-bezier(.15,.6,.2,1) both;
+    animation-duration: inherit;
+}
+
+@keyframes roll-spin {
+    from { transform: translateY(0); }
+    to { transform: translateY(calc(var(--roll-steps) * -1 * var(--roll-line))); }
+}
+
+/* ==========================================================================
    Reduced motion: no shakes, bounces, scaling or rain
    ========================================================================== */
 @media (prefers-reduced-motion: reduce) {
