@@ -14,6 +14,7 @@ import {
     bestStreak, guessDistribution, dailySeries, encodeStatsBackup, decodeStatsBackup, mergeStats, importStatsBackup
 } from '../js/storage.js';
 import { verifyPuzzles } from '../gridGenerator.js';
+import { cellStateClass } from '../js/grid.js';
 
 const puzzles = JSON.parse(readFileSync(new URL('../grids.json', import.meta.url), 'utf8'));
 
@@ -350,4 +351,12 @@ test('line effects: every clue type has a themed effect and an accurate label', 
     for (const rule of Object.keys(ruleChecks)) {
         assert.notEqual(plan({ rule, target: 5 }, [1, 2, 3, 4]).type, 'sweep', rule);
     }
+});
+
+test('cellStateClass keeps only the status, so a save made mid-animation restores cleanly', () => {
+    assert.equal(cellStateClass('grid-cell preset in-line rolling'), 'grid-cell preset');
+    assert.equal(cellStateClass('grid-cell correct fx-pop cell-celebrate'), 'grid-cell correct');
+    assert.equal(cellStateClass('grid-cell hint edited shake'), 'grid-cell hint');
+    assert.equal(cellStateClass('grid-cell in-line'), 'grid-cell');
+    assert.equal(cellStateClass(''), 'grid-cell');
 });

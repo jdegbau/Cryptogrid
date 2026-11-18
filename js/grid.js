@@ -19,8 +19,10 @@ const STATUS_TEXT = {
     hint: 'within 2 of the answer'
 };
 
-const cellStatus = (cellDiv) =>
-    ['preset', 'correct', 'revealed', 'incorrect', 'hint'].find(s => cellDiv.classList.contains(s)) || null;
+// The classes that make up a cell's status; at most one is on a cell.
+const STATE_CLASSES = ['preset', 'correct', 'revealed', 'incorrect', 'hint'];
+
+const cellStatus = (cellDiv) => STATE_CLASSES.find(s => cellDiv.classList.contains(s)) || null;
 
 // Keep screen-reader text in step with the cell's state. Inputs carry their
 // own label; locked cells use a hidden text label read before the number.
@@ -198,13 +200,20 @@ export const readUserSolution = () => {
     return solution;
 };
 
+// A cell's saved state: 'grid-cell' plus its status class, if any. Anything
+// else on the cell (highlights, animations in progress) is left out, so a
+// save made mid-animation can't bring that animation's styles back.
+export const cellStateClass = (className) => {
+    const status = STATE_CLASSES.find(s => className.split(/\s+/).includes(s));
+    return status ? `grid-cell ${status}` : 'grid-cell';
+};
 export const readCellStates = () => {
     const states = [];
     allCells().forEach(cell => {
         const row = Number(cell.dataset.row);
         const col = Number(cell.dataset.col);
         states[row] = states[row] || [];
-        states[row][col] = cell.className.replace(/\b(shake|in-line|reveal-anim|duplicate|edited)\b/g, '').replace(/\s+/g, ' ').trim();
+        states[row][col] = cellStateClass(cell.className);
     });
     return states;
 };
@@ -281,7 +290,7 @@ export const restoreCells = (userSolution, cellStates, answerGrid, createInput, 
         rowStates.forEach((className, col) => {
             const cellDiv = cellAt(row, col);
             if (!cellDiv) return;
-            cellDiv.className = className;
+            cellDiv.className = cellStateClass(className || '');
             const content = cellDiv.querySelector('.grid-cell-content');
             if (cellDiv.classList.contains('correct') || cellDiv.classList.contains('revealed')) {
                 lockCell(cellDiv, answerGrid[row][col]);
