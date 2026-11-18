@@ -56,7 +56,7 @@ export const updateEdited = (cellDiv) => {
 // Draws a 5x5 grid: column letters along the top, row numbers down the
 // left, 4x4 cells in the middle. `createInput(row, col)` builds the input
 // for each blank cell, and `setupCell(cellDiv, popover, row, col)` adds
-// per-cell behaviour.
+// per-cell behavior.
 export const renderGrid = (displayGrid, { createInput, setupCell }) => {
     const container = document.getElementById('grid-cells');
     container.innerHTML = '';
@@ -237,7 +237,7 @@ const lockCell = (cellDiv, value) => {
     cellDiv.querySelector('.grid-cell-content').textContent = value;
 };
 
-// Flip a cell's colour in, staggered across the grid in reading order.
+// Flip a cell's color in, staggered across the grid in reading order.
 const flip = (cellDiv) => {
     const order = Number(cellDiv.dataset.row) * 4 + Number(cellDiv.dataset.col);
     cellDiv.style.setProperty('--delay', `${order * 40}ms`);
@@ -247,7 +247,7 @@ const flip = (cellDiv) => {
     setTimeout(() => cellDiv.classList.remove('reveal-anim'), 1200);
 };
 
-// Colour each open cell by its guess: correct (locks it), hint (within 2) or incorrect.
+// Color each open cell by its guess: correct (locks it), hint (within 2) or incorrect.
 export const markGuesses = (answerGrid) => {
     editableInputs().forEach(input => {
         const row = Number(input.dataset.row);

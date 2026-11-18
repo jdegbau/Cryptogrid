@@ -174,7 +174,7 @@ export const setupKeypad = ({ getTarget, getHistory }) => {
     return { update, hide: (hidden) => { pad.hidden = hidden; } };
 };
 
-// Popover listing the guesses already made for a cell, coloured by how
+// Popover listing the guesses already made for a cell, colored by how
 // close each was. Pointer devices only; touch screens see this on the pad.
 export const attachGuessPopover = (cellDiv, popover, { getGuesses, getAnswer }) => {
     if (!canHover()) return;

@@ -150,7 +150,7 @@ test('storage: saved game only resumes for the same puzzle and day', () => {
     assert.equal(storage.getItem(GAME_KEY), null);
 });
 
-test('storage: stats replace the entry for the same day and summarise', () => {
+test('storage: stats replace the entry for the same day and summarize', () => {
     const storage = new MemoryStorage();
     recordResult(storage, { date: '2026-11-09', win: false, guessesUsed: 5, timeSpent: 100, v: 2 });
     recordResult(storage, { date: '2026-11-10', win: true, guessesUsed: 1, timeSpent: 50, v: 2 });

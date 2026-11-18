@@ -71,7 +71,7 @@ export const setupAdmin = (game) => {
 
     const status = el('p', { className: 'admin-status' });
     status.textContent = game.practice
-        ? `Practising puzzle #${game.currentID}: not saved, no stats. Today's is #${game.todayID}.`
+        ? `Practicing puzzle #${game.currentID}: not saved, no stats. Today's is #${game.todayID}.`
         : `Today's puzzle is #${game.todayID} of ${game.totalPuzzles}.`;
 
     const dialog = el('dialog', { id: 'admin-modal', className: 'sheet admin' });
@@ -121,9 +121,9 @@ export const setupAdmin = (game) => {
         ]),
 
         el('h3', { textContent: 'Puzzle' }),
-        el('div', { className: 'admin-row' }, [puzzleInput, button('Practise', openPuzzle)]),
+        el('div', { className: 'admin-row' }, [puzzleInput, button('Practice', openPuzzle)]),
         el('div', { className: 'admin-actions' }, [
-            button(`Practise today's (#${game.todayID})`, () => { window.location.href = urlWith({ puzzle: game.todayID }); }),
+            button(`Practice today's (#${game.todayID})`, () => { window.location.href = urlWith({ puzzle: game.todayID }); }),
             ...(game.practice ? [button('Back to the real game', () => { window.location.href = urlWith({}); }, 'primary')] : [])
         ]),
 

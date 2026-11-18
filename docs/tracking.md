@@ -60,7 +60,7 @@ Before each event, the game pushes `{ event_data: null }`. Tag managers merge pu
 | `current_streak` | number | `4` | Wins on consecutive days |
 | `best_streak` | number | `6` | |
 | `theme` | string | `"system"` | `system`, `light` or `dark` |
-| `high_contrast` | boolean | `false` | High-contrast colours turned on |
+| `high_contrast` | boolean | `false` | High-contrast colors turned on |
 | `hide_timer` | boolean | `false` | Timer hidden |
 
 ### `app`

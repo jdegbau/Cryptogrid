@@ -234,9 +234,9 @@ const playOne = (grid, line, rule, values) => {
             break;
         }
         case 'unique': {
-            // Each cell lights up in a colour of its own.
-            const colours = ['var(--accent)', 'var(--correct-text)', 'var(--hint-text)', 'var(--incorrect-text)'];
-            cells.forEach((cell, i) => animateCell(cell, 'fx-ring', i * 130, { '--fx-colour': colours[i] }));
+            // Each cell lights up in a color of its own.
+            const colors = ['var(--accent)', 'var(--correct-text)', 'var(--hint-text)', 'var(--incorrect-text)'];
+            cells.forEach((cell, i) => animateCell(cell, 'fx-ring', i * 130, { '--fx-color': colors[i] }));
             break;
         }
         case 'zigzag':
@@ -246,7 +246,7 @@ const playOne = (grid, line, rule, values) => {
             break;
         case 'majority':
             cells.forEach((cell, i) => (plan.match.includes(i)
-                ? animateCell(cell, 'fx-ring', i * 110, { '--fx-colour': 'var(--accent)' })
+                ? animateCell(cell, 'fx-ring', i * 110, { '--fx-color': 'var(--accent)' })
                 : animateCell(cell, 'fx-dim', 0)));
             break;
         default:
@@ -270,7 +270,7 @@ const playOne = (grid, line, rule, values) => {
         cells.forEach(cell => {
             cell.classList.remove(...FX_CLASSES);
             cell.style.removeProperty('--fx-delay');
-            cell.style.removeProperty('--fx-colour');
+            cell.style.removeProperty('--fx-color');
             if (!cell.getAttribute('style')) cell.removeAttribute('style');
         });
     }, LIFETIME_MS);

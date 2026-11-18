@@ -4,7 +4,7 @@
 import { formatTime } from './date.js';
 import { showToast, setupDialog } from './ui.js';
 
-// Squares for the shared grid. High contrast matches the in-game colours:
+// Squares for the shared grid. High contrast matches the in-game colors:
 // blue correct, orange close, black wrong (and white for given cells, so
 // they can't be mistaken for blue).
 export const CELL_EMOJI = {

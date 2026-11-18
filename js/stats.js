@@ -10,7 +10,7 @@ const CHART_JS_INTEGRITY = 'sha384-dug+JxfBvklEQdJ4AYuBBAIScUz0bVN73xpy273gcAwHj
 
 const COLORS = { win: '#22a95a', loss: '#e0524a', time: '#f59e0b' };
 
-// Text, grid and slice-border colours from the current theme.
+// Text, grid and slice-border colors from the current theme.
 const themeColors = () => {
     const css = getComputedStyle(document.documentElement);
     const v = (name) => css.getPropertyValue(name).trim();

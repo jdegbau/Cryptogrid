@@ -43,7 +43,7 @@ const state = {
     started: false,     // a digit has been entered (puzzle_start sent)
     firstVisit: false,  // first time this browser has opened the game
     practice: false,    // admin practice game (?puzzle=N): never saved, no stats
-    todayID: null       // today's puzzle, even while practising another
+    todayID: null       // today's puzzle, even while practicing another
 };
 
 // Per-guess counters for analytics, reset after each submit.
