@@ -311,7 +311,7 @@ const drawPuzzle = () => {
 
 // `restoring` is true when reloading a game that already ended: show the
 // final state without replaying the effects or recording stats again.
-const endGame = (won, { restoring = false } = {}) => {
+const endGame = (won, { restoring = false, celebrateAfterMs = 0 } = {}) => {
     stopTimer();
     $('check-button').hidden = true;
     const shareButton = $('share-button');
@@ -332,7 +332,7 @@ const endGame = (won, { restoring = false } = {}) => {
     const guessesUsed = won ? wrongGuesses + 1 : wrongGuesses;
     const timeSpent = elapsedSeconds();
     if (!restoring) {
-        if (won) playWinEffect(); else playLoseEffect();
+        if (won) playWinEffect(celebrateAfterMs); else playLoseEffect();
         recordResult(storage, { date: state.puzzleDate, win: won, guessesUsed, timeSpent, v: STATS_VERSION });
         // After recordResult, so the player context includes this game.
         track(EVENTS.PUZZLE_COMPLETE, {
@@ -428,7 +428,10 @@ const checkSolution = () => {
     track(EVENTS.GUESS_SUBMIT, { ...guessData, result: solved ? 'solved' : 'not_solved' });
 
     if (solved) {
-        endGame(true);
+        // The rows and columns the winning guess completed get their moment
+        // too. Confetti starts right away; the cell wave waits for them.
+        const lineFxMs = playLineEffects(newlySolvedLines(solvedBefore, solvedCells()), state.puzzle, state.answerGrid);
+        endGame(true, { celebrateAfterMs: lineFxMs });
     } else {
         updateGuessIcons(state.guessesLeft, TOTAL_GUESSES);
         if (state.guessesLeft <= 0) {
@@ -439,7 +442,7 @@ const checkSolution = () => {
             setResultMessage(`Not quite. ${left}.`);
             focusFirstOpenCell();
             // Rows and columns this guess completed get a little moment of
-            // their own. A win or loss has its own effect instead.
+            // their own. A loss has its own effect instead.
             playLineEffects(newlySolvedLines(solvedBefore, solvedCells()), state.puzzle, state.answerGrid);
         }
     }

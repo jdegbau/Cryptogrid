@@ -208,10 +208,13 @@ const launchConfetti = (bursts) => {
 
 const FLIP_SETTLE_MS = 900; // the guess flip across the grid (see grid.js)
 
-export const playWinEffect = () => {
+// Confetti goes off once the winning guess has flipped in. The cell wave
+// waits for `waveAfterMs` (e.g. until solved-line effects end), since both
+// animate the same cells.
+export const playWinEffect = (waveAfterMs = 0) => {
     if (prefersReducedMotion()) return;
+    setTimeout(() => waveGrid('cell-celebrate', 70), Math.max(FLIP_SETTLE_MS, waveAfterMs));
     setTimeout(() => {
-        waveGrid('cell-celebrate', 70);
         const grid = document.getElementById('grid-cells');
         const r = grid?.getBoundingClientRect();
         const cx = r ? r.left + r.width / 2 : window.innerWidth / 2;
