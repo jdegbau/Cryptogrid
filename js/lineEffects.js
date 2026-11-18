@@ -75,15 +75,42 @@ export const planLineEffect = (rule, values) => {
     }
 };
 
+// One sample rule per animation, for the admin panel's demo buttons.
+export const LINE_EFFECT_DEMOS = [
+    { rule: 'palindromic', name: 'Mirror' },
+    { rule: 'sum', name: 'Sum' },
+    { rule: 'above_threshold', name: 'Rise (all >)' },
+    { rule: 'below_threshold', name: 'Sink (all <)' },
+    { rule: 'even', name: 'Pairs (even)' },
+    { rule: 'odd', name: 'Solo (odd)' },
+    { rule: 'increasing', name: 'Trend' },
+    { rule: 'unique_digits', name: 'Unique' },
+    { rule: 'alternating_parity', name: 'Zigzag' },
+    { rule: 'majority_even', name: 'Majority' }
+];
+
+// A line in the puzzle whose rule plays the same animation as `ruleName`
+// (an exact match first), or null if there isn't one.
+export const findLineForRule = ({ rowRules = [], colRules = [] }, ruleName) => {
+    const lines = [
+        ...rowRules.map((rule, index) => ({ kind: 'row', index, rule })),
+        ...colRules.map((rule, index) => ({ kind: 'col', index, rule }))
+    ].filter(l => l.rule);
+    const type = planLineEffect({ rule: ruleName }, [1, 2, 3, 4]).type;
+    const found = lines.find(l => l.rule.rule === ruleName)
+        || lines.find(l => planLineEffect(l.rule, [1, 2, 3, 4]).type === type);
+    return found ? { kind: found.kind, index: found.index } : null;
+};
+
 // --- Drawing ---
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 // Every delay inside an effect is stretched by this much; the CSS durations
 // in styles.css are stretched to match.
-const PACE = 1.3;
+const PACE = 1.6;
 const START_MS = 900;     // after the guess has flipped in (see grid.js)
-const STAGGER_MS = 1300;  // between lines completed by the same guess, so labels never overlap
-const LIFETIME_MS = 2300; // how long one effect stays up (the fade starts at 1.8 s; see styles.css)
+const STAGGER_MS = 1600;  // between lines completed by the same guess, so labels never overlap
+const LIFETIME_MS = 2900; // how long one effect stays up (the fade starts at 2.3 s; see styles.css)
 
 const svgEl = (tag, attrs) => {
     const el = document.createElementNS(SVG_NS, tag);

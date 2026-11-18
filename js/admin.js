@@ -63,7 +63,8 @@ const setAnswersShown = (show, answerGrid) => {
 
 // Build the panel and its button. `game` gives what the panel needs:
 //   todayID, currentID, totalPuzzles, practice (bool), answerGrid(),
-//   rollIn(), playLines(), playWin(), playLose(), wipeToday(), clearStats()
+//   rollIn(), playLines(), lineDemos, playLine(rule), playWin(), playLose(),
+//   wipeToday(), clearStats()
 export const setupAdmin = (game) => {
     const titleId = 'admin-title';
     const close = el('button', { type: 'button', className: 'icon-button sheet-close', ariaLabel: 'Close admin' });
@@ -106,10 +107,18 @@ export const setupAdmin = (game) => {
         el('h3', { textContent: 'Effects' }),
         el('div', { className: 'admin-actions' }, [
             button('Roll in numbers', after(game.rollIn)),
-            button('Line effects', after(game.playLines)),
+            button('All line effects', after(game.playLines)),
             button('Win', after(game.playWin)),
             button('Lose', after(game.playLose))
         ]),
+
+        el('h3', { textContent: 'Line effects' }),
+        el('p', { className: 'admin-help', textContent: "Plays on a line with that kind of clue, or on row 1 if this puzzle hasn't got one." }),
+        el('div', { className: 'admin-actions admin-actions-compact' },
+            game.lineDemos.map(({ rule, name }) => button(name, after(() => {
+                const where = game.playLine(rule);
+                showToast(where ? `${name}: ${where}` : `${name}: row 1 (not in this puzzle)`);
+            })))),
 
         el('h3', { textContent: 'Answers' }),
         el('label', { className: 'setting setting-toggle' }, [
