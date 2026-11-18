@@ -62,7 +62,7 @@ const waveGrid = (className, step) => {
 const cssVar = (name, fallback) =>
     getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 
-const confettiColours = () => [
+const confettiColors = () => [
     cssVar('--accent', '#6236e8'),
     cssVar('--primary-bg', '#6236e8'),
     cssVar('--brand-green', '#11612f'),
@@ -95,7 +95,7 @@ const launchConfetti = (bursts) => {
     resize();
     window.addEventListener('resize', resize);
 
-    const colours = confettiColours();
+    const colors = confettiColors();
     const particles = [];
     const scale = Math.min(1.25, Math.max(0.75, window.innerWidth / 700));
 
@@ -113,7 +113,7 @@ const launchConfetti = (bursts) => {
                 kind: shape < 0.55 ? 'rect' : shape < 0.8 ? 'ribbon' : 'dot',
                 w: rand(7, 12) * scale,
                 h: rand(4, 7) * scale,
-                colour: colours[(Math.random() * colours.length) | 0],
+                color: colors[(Math.random() * colors.length) | 0],
                 rot: rand(0, Math.PI * 2),
                 vrot: rand(-8, 8),
                 flip: rand(0, Math.PI * 2),
@@ -170,8 +170,8 @@ const launchConfetti = (bursts) => {
             ctx.globalAlpha = Math.max(0, fade);
             ctx.translate(p.x, p.y);
             ctx.rotate(p.rot);
-            ctx.fillStyle = p.colour;
-            ctx.strokeStyle = p.colour;
+            ctx.fillStyle = p.color;
+            ctx.strokeStyle = p.color;
             if (p.kind === 'dot') {
                 ctx.scale(1, Math.abs(facing) * 0.6 + 0.4);
                 ctx.beginPath();

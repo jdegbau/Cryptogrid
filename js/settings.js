@@ -1,4 +1,4 @@
-// Player settings: theme, high-contrast colours and hiding the timer.
+// Player settings: theme, high-contrast colors and hiding the timer.
 // Saved in storage and applied as attributes on <html>, which the CSS reads.
 // A small inline script in index.html applies them before first paint.
 import { track, EVENTS } from './analytics.js';
@@ -26,7 +26,7 @@ export const writeSettings = (storage, settings) => {
     try { storage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { }
 };
 
-// The browser's toolbar colour should match the theme that is showing.
+// The browser's toolbar color should match the theme that is showing.
 const THEME_COLORS = { light: '#f6f5fb', dark: '#0f0e17' };
 const updateThemeColor = (theme) => {
     document.querySelectorAll('meta[name="theme-color"]').forEach(meta => {

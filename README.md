@@ -1,6 +1,6 @@
 # Pseudoku
 
-A daily logic puzzle. Fill a 4×4 grid with the numbers 1–9 so every row and column matches its clue. You get five guesses, and each one colours every cell: correct, wrong, or within 2 of the answer.
+A daily logic puzzle. Fill a 4×4 grid with the numbers 1–9 so every row and column matches its clue. You get five guesses, and each one colors every cell: correct, wrong, or within 2 of the answer.
 
 Everyone gets the same puzzle on the same day, by the calendar in Chicago. Puzzles get harder through the week: Monday is the easiest and Sunday the hardest. Every puzzle has exactly one solution. Puzzle #1 is 10 November 2026, and the list of 1092 runs until 5 November 2029 before repeating.
 
@@ -18,13 +18,13 @@ Then open <http://localhost:8000>.
 
 | Path | What it is |
 |---|---|
-| `index.html`, `styles.css` | The page. All colours are CSS variables at the top of `styles.css`, with a dark theme that follows the system setting unless a theme is picked in settings, and a high-contrast set for the cell colours. |
+| `index.html`, `styles.css` | The page. All colors are CSS variables at the top of `styles.css`, with a dark theme that follows the system setting unless a theme is picked in settings, and a high-contrast set for the cell colors. |
 | `js/game.js` | Entry point: game state, submitting guesses, timer, saving, sharing |
 | `js/grid.js` | Draws the grid and clues, highlights the selected row and column, reads entries, marks guesses |
 | `js/input.js` | Cell inputs, the on-screen number pad and the guess-history popover |
 | `js/ui.js` | Result line, toast, dialogs, win/lose effects |
 | `js/stats.js` | Stats dialog; loads Chart.js (pinned, with an integrity hash) on first open |
-| `js/settings.js` | Settings: theme, high-contrast colours, hiding the timer |
+| `js/settings.js` | Settings: theme, high-contrast colors, hiding the timer |
 | `js/analytics.js` | Analytics events pushed to `window.dataLayer` for a tag manager. See [`docs/tracking.md`](docs/tracking.md) for every event and field |
 | `js/share.js` | Share text for results and stats; share sheet on phones, clipboard elsewhere, copy-by-hand fallback |
 | `js/date.js` | Today's puzzle, the countdown to the next one, time formatting |

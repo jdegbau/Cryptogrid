@@ -1,12 +1,13 @@
 // Entry point: game state, the submit/check flow, timer, saving and sharing.
 import { getPuzzleDate, getPuzzleID, formatTime, msUntilNextPuzzle, formatCountdown, weekdayForPuzzleID, WEEKDAYS } from './date.js';
 import { getAnswerGrid } from './encoding.js';
-import { readGameState, readAnyGameState, writeGameState, clearGameState, recordResult, readStats, summarizeStats, STATS_VERSION } from './storage.js';
+import { readGameState, readAnyGameState, writeGameState, clearGameState, recordResult, readStats, summarizeStats, STATS_VERSION, STATS_KEY } from './storage.js';
 import {
     cellKey, editableInputs, renderGrid, renderClues, readUserSolution, readCellStates,
     isSolved, markGuesses, revealAnswers, restoreCells, gridEmojis, highlightClues, updateEdited, solvedCells
 } from './grid.js';
-import { newlySolvedLines, playLineEffects } from './lineEffects.js';
+import { newlySolvedLines, playLineEffects, solvedLines } from './lineEffects.js';
+import { rollInNumbers } from './rollIn.js';
 import { createCellInput, attachGuessPopover, setupKeypad, guessQuality } from './input.js';
 import {
     setResultMessage, setEndResult, updateGuessIcons, setupDialog,
@@ -15,7 +16,8 @@ import {
 import { setupStatsDialog } from './stats.js';
 import { buildResultShare, shareText, gameUrl, CELL_EMOJI } from './share.js';
 import { setupSettingsDialog } from './settings.js';
-import { track, EVENTS, setContextProvider, inputDevice, displayMode, ruleList, seconds } from './analytics.js';
+import { track, EVENTS, setContextProvider, setTrackingEnabled, inputDevice, displayMode, ruleList, seconds } from './analytics.js';
+import { readAdminMode, practicePuzzleID, setupAdmin } from './admin.js';
 
 const TOTAL_GUESSES = 5;
 const WIN_MESSAGE = "Congratulations! You've solved the puzzle!";
@@ -24,6 +26,10 @@ const LOAD_ERROR = "Sorry, today's puzzle couldn't be loaded.";
 
 const storage = window.localStorage;
 const HELP_SEEN_KEY = 'pseudokuSeenHelp';
+
+// Admin mode (?admin): a hidden test panel, with tracking off. See js/admin.js.
+const admin = readAdminMode(storage);
+if (admin) setTrackingEnabled(false);
 
 const state = {
     puzzles: [],
@@ -35,7 +41,9 @@ const state = {
     guessHistory: {},
     focusedCell: null,  // [row, col] of the input with focus
     started: false,     // a digit has been entered (puzzle_start sent)
-    firstVisit: false   // first time this browser has opened the game
+    firstVisit: false,  // first time this browser has opened the game
+    practice: false,    // admin practice game (?puzzle=N): never saved, no stats
+    todayID: null       // today's puzzle, even while practicing another
 };
 
 // Per-guess counters for analytics, reset after each submit.
@@ -157,8 +165,8 @@ const onEntry = (e) => {
     }
 };
 
-// The saved game for today's puzzle, if any.
-const readSaved = () => readGameState(storage, { puzzleID: state.puzzleID, puzzleDate: state.puzzleDate });
+// The saved game for today's puzzle, if any. A practice game has none.
+const readSaved = () => state.practice ? null : readGameState(storage, { puzzleID: state.puzzleID, puzzleDate: state.puzzleDate });
 
 // Another tab has saved this puzzle since this one last saved or loaded,
 // so this tab's board and clock are out of date.
@@ -175,7 +183,7 @@ const laterDaySaved = () => {
 const savedTimeMs = (saved) => Number.isFinite(saved.timeSpentMs) ? saved.timeSpentMs : (saved.timeSpent || 0) * 1000;
 
 const saveGame = () => {
-    if (!state.puzzle) return;
+    if (!state.puzzle || state.practice) return;
     // Never overwrite a newer save from another tab with this tab's older
     // board and clock; this tab picks the newer one up when it is shown.
     if (isStale(readSaved()) || laterDaySaved()) return;
@@ -302,6 +310,12 @@ const drawPuzzle = () => {
         chip.textContent = state.puzzle.difficulty;
         info.append(chip);
     }
+    if (state.practice) {
+        const chip = document.createElement('span');
+        chip.className = 'difficulty practice-chip';
+        chip.textContent = 'Practice';
+        info.append(chip);
+    }
     $('keypad').hidden = false;
     $('active-clues').classList.remove('concealed');
     highlightClues(null);
@@ -333,7 +347,7 @@ const endGame = (won, { restoring = false, celebrateAfterMs = 0 } = {}) => {
     const timeSpent = elapsedSeconds();
     if (!restoring) {
         if (won) playWinEffect(celebrateAfterMs); else playLoseEffect();
-        recordResult(storage, { date: state.puzzleDate, win: won, guessesUsed, timeSpent, v: STATS_VERSION });
+        if (!state.practice) recordResult(storage, { date: state.puzzleDate, win: won, guessesUsed, timeSpent, v: STATS_VERSION });
         // After recordResult, so the player context includes this game.
         track(EVENTS.PUZZLE_COMPLETE, {
             result: won ? 'win' : 'loss',
@@ -498,7 +512,7 @@ const resumeOrStart = () => {
 
     // Only clear an earlier day's save; a later day's (from another tab)
     // is left alone, and this tab won't save over it.
-    if (!laterDaySaved()) clearGameState(storage);
+    if (!state.practice && !laterDaySaved()) clearGameState(storage);
     lastSavedAt = 0;
     const puzzle = state.puzzles.find(p => p.id === state.puzzleID);
     if (!puzzle) {
@@ -521,6 +535,14 @@ const resumeOrStart = () => {
 const loadGame = () => {
     const loadState = resumeOrStart();
     if (loadState) {
+        // Roll the numbers in only the first time this puzzle opens, not
+        // when a saved game is resumed. On a first visit the help sheet
+        // covers the grid, so wait for it to close.
+        if (loadState === 'new') {
+            const help = $('help-modal');
+            if (help.open) help.addEventListener('close', rollInNumbers, { once: true });
+            else rollInNumbers();
+        }
         track(EVENTS.GAME_LOAD, { load_state: loadState, load_time_ms: Math.round(performance.now()) });
     } else {
         track(EVENTS.PUZZLE_LOAD_ERROR, { error_type: 'puzzle_missing', error_message: `No puzzle with id ${state.puzzleID}` });
@@ -605,7 +627,33 @@ const init = async () => {
     // game in progress can be finished; a reload gets the new day's.
     state.puzzleDate = getPuzzleDate();
     state.puzzleID = getPuzzleID(state.puzzles.length);
+    state.todayID = state.puzzleID;
+    const practiceID = admin ? practicePuzzleID(window.location, state.puzzles.length) : null;
+    if (practiceID) {
+        state.puzzleID = practiceID;
+        state.practice = true;
+    }
     loadGame();
+    if (admin) setupAdmin(adminActions());
 };
+
+// What the admin panel can do to the game.
+const adminActions = () => ({
+    todayID: state.todayID,
+    currentID: state.puzzleID,
+    totalPuzzles: state.puzzles.length,
+    practice: state.practice,
+    answerGrid: () => state.answerGrid,
+    rollIn: rollInNumbers,
+    // Every row and column, whether solved or not.
+    playLines: () => playLineEffects(solvedLines(state.answerGrid.map(r => r.map(() => true))), state.puzzle, state.answerGrid),
+    playWin: () => playWinEffect(0),
+    playLose: playLoseEffect,
+    wipeToday: () => {
+        state.practice = true; // stop this page saving the old game on its way out
+        clearGameState(storage);
+    },
+    clearStats: () => { try { storage.removeItem(STATS_KEY); } catch (e) { } }
+});
 
 init();
