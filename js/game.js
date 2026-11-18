@@ -522,10 +522,14 @@ const resumeOrStart = () => {
 const loadGame = () => {
     const loadState = resumeOrStart();
     if (loadState) {
-        // On a first visit the help sheet covers the grid: roll once it closes.
-        const help = $('help-modal');
-        if (help.open) help.addEventListener('close', rollInNumbers, { once: true });
-        else rollInNumbers();
+        // Roll the numbers in only the first time this puzzle opens, not
+        // when a saved game is resumed. On a first visit the help sheet
+        // covers the grid, so wait for it to close.
+        if (loadState === 'new') {
+            const help = $('help-modal');
+            if (help.open) help.addEventListener('close', rollInNumbers, { once: true });
+            else rollInNumbers();
+        }
         track(EVENTS.GAME_LOAD, { load_state: loadState, load_time_ms: Math.round(performance.now()) });
     } else {
         track(EVENTS.PUZZLE_LOAD_ERROR, { error_type: 'puzzle_missing', error_message: `No puzzle with id ${state.puzzleID}` });

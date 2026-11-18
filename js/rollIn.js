@@ -86,7 +86,7 @@ const rollCell = (cellDiv) => {
     setTimeout(finish, duration + STOP_MS); // in case animationend never fires
 };
 
-// Roll every cell that shows a number (given, or locked from a saved game).
+// Roll every cell that shows a number.
 export const rollInNumbers = () => {
     if (prefersReducedMotion()) return;
     document.querySelectorAll('.grid-cell').forEach(rollCell);
