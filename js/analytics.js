@@ -68,8 +68,13 @@ const browserTracker = createTracker({ target: browserTarget(), getContext: () =
 // game.js supplies the context once its state exists.
 export const setContextProvider = (fn) => { getBrowserContext = fn; };
 
+// Admin mode turns tracking off, so testing doesn't show up in reports.
+let trackingEnabled = true;
+export const setTrackingEnabled = (on) => { trackingEnabled = Boolean(on); };
+
 // Never let tracking break the game.
 export const track = (event, eventData) => {
+    if (!trackingEnabled) return null;
     try { return browserTracker.track(event, eventData); } catch (e) { return null; }
 };
 
