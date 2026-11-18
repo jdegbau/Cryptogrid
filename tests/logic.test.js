@@ -314,7 +314,7 @@ test('analytics: a failing context still sends the event', async () => {
     assert.equal(layer[1].puzzle, null);
 });
 
-import { lineValues, solvedLines, newlySolvedLines, planLineEffect } from '../js/lineEffects.js';
+import { lineValues, solvedLines, newlySolvedLines, planLineEffect, findLineForRule, LINE_EFFECT_DEMOS } from '../js/lineEffects.js';
 
 test('line effects: finds the rows and columns a guess just completed', () => {
     const grid = [[1, 8, 3, 6], [4, 6, 6, 4], [1, 7, 1, 8], [6, 4, 8, 2]];
@@ -359,4 +359,20 @@ test('cellStateClass keeps only the status, so a save made mid-animation restore
     assert.equal(cellStateClass('grid-cell hint edited shake'), 'grid-cell hint');
     assert.equal(cellStateClass('grid-cell in-line'), 'grid-cell');
     assert.equal(cellStateClass(''), 'grid-cell');
+});
+
+test('line effects: admin demos find a line that plays each animation', () => {
+    const puzzle = {
+        rowRules: [{ rule: 'odd' }, { rule: 'sum_even' }, { rule: 'decreasing' }, { rule: 'palindromic' }],
+        colRules: [{ rule: 'sum', target: 20 }, { rule: 'even' }, { rule: 'majority_odd' }, { rule: 'unique_digits' }]
+    };
+    // Exact match first, even when an earlier line plays the same animation.
+    assert.deepEqual(findLineForRule(puzzle, 'sum'), { kind: 'col', index: 0 });
+    // Otherwise any line with the same animation.
+    assert.deepEqual(findLineForRule(puzzle, 'increasing'), { kind: 'row', index: 2 });
+    assert.deepEqual(findLineForRule(puzzle, 'majority_even'), { kind: 'col', index: 2 });
+    assert.equal(findLineForRule(puzzle, 'above_threshold'), null);
+    // One demo per animation, with no repeats.
+    const types = LINE_EFFECT_DEMOS.map(d => planLineEffect({ rule: d.rule }, [1, 2, 3, 4]).type);
+    assert.equal(new Set(types).size, types.length);
 });

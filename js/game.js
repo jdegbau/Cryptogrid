@@ -6,7 +6,7 @@ import {
     cellKey, editableInputs, renderGrid, renderClues, readUserSolution, readCellStates,
     isSolved, markGuesses, revealAnswers, restoreCells, gridEmojis, highlightClues, updateEdited, solvedCells
 } from './grid.js';
-import { newlySolvedLines, playLineEffects, solvedLines } from './lineEffects.js';
+import { newlySolvedLines, playLineEffects, solvedLines, findLineForRule, LINE_EFFECT_DEMOS } from './lineEffects.js';
 import { rollInNumbers } from './rollIn.js';
 import { createCellInput, attachGuessPopover, setupKeypad, guessQuality } from './input.js';
 import {
@@ -647,6 +647,20 @@ const adminActions = () => ({
     rollIn: rollInNumbers,
     // Every row and column, whether solved or not.
     playLines: () => playLineEffects(solvedLines(state.answerGrid.map(r => r.map(() => true))), state.puzzle, state.answerGrid),
+    lineDemos: LINE_EFFECT_DEMOS,
+    // One animation: on a line of this puzzle with that kind of clue if
+    // there is one, otherwise on row 1 as if it had that clue. Says which.
+    playLine: (ruleName) => {
+        const line = findLineForRule(state.puzzle, ruleName);
+        if (line) {
+            playLineEffects([line], state.puzzle, state.answerGrid);
+            return `${line.kind === 'row' ? 'Row' : 'Column'} ${line.kind === 'row' ? line.index + 1 : 'ABCD'[line.index]}`;
+        }
+        const values = state.answerGrid[0];
+        const rule = { rule: ruleName, target: ruleName === 'sum' ? values.reduce((a, b) => a + b, 0) : undefined };
+        playLineEffects([{ kind: 'row', index: 0 }], { rowRules: [rule], colRules: [] }, state.answerGrid);
+        return null;
+    },
     playWin: () => playWinEffect(0),
     playLose: playLoseEffect,
     wipeToday: () => {
