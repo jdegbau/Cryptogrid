@@ -4,7 +4,7 @@ import { getAnswerGrid } from './encoding.js';
 import { readGameState, readAnyGameState, writeGameState, clearGameState, recordResult, readStats, summarizeStats, STATS_VERSION, STATS_KEY } from './storage.js';
 import {
     cellKey, editableInputs, renderGrid, renderClues, readUserSolution, readCellStates,
-    isSolved, markGuesses, revealAnswers, restoreCells, gridEmojis, highlightClues, updateEdited, solvedCells
+    isSolved, markGuesses, revealAnswers, restoreCells, gridEmojis, gridStates, highlightClues, updateEdited, solvedCells
 } from './grid.js';
 import { newlySolvedLines, playLineEffects, solvedLines, findLineForRule, LINE_EFFECT_DEMOS } from './lineEffects.js';
 import { rollInNumbers } from './rollIn.js';
@@ -14,7 +14,9 @@ import {
     playWinEffect, playLoseEffect, shake
 } from './ui.js';
 import { setupStatsDialog } from './stats.js';
-import { buildResultShare, shareText, gameUrl, CELL_EMOJI } from './share.js';
+import { buildResultShare, gameUrl, CELL_EMOJI } from './share.js';
+import { describeResultCard } from './shareImage.js';
+import { openShareSheet } from './shareSheet.js';
 import { setupSettingsDialog } from './settings.js';
 import { track, EVENTS, setContextProvider, setTrackingEnabled, inputDevice, displayMode, ruleList, seconds } from './analytics.js';
 import { readAdminMode, practicePuzzleID, setupAdmin } from './admin.js';
@@ -362,10 +364,9 @@ const endGame = (won, { restoring = false, celebrateAfterMs = 0 } = {}) => {
     // Built on click so it follows the current settings.
     const buildShare = () => {
         const { highContrast, hideTimer } = settings.get();
-        return buildResultShare({
+        const fields = {
             puzzleID: state.puzzleID,
             difficulty: state.puzzle.difficulty,
-            grid: gridEmojis(state.answerGrid, highContrast ? CELL_EMOJI.highContrast : CELL_EMOJI.standard),
             won,
             wrongGuesses,
             total: TOTAL_GUESSES,
@@ -373,12 +374,19 @@ const endGame = (won, { restoring = false, celebrateAfterMs = 0 } = {}) => {
             showTime: !hideTimer,
             streak: summarizeStats(readStats(storage), state.puzzleDate).streak,
             url: gameUrl()
-        });
+        };
+        return {
+            heading: 'Share your score',
+            text: buildResultShare({ ...fields, grid: gridEmojis(state.answerGrid, highContrast ? CELL_EMOJI.highContrast : CELL_EMOJI.standard) }),
+            card: describeResultCard({ ...fields, puzzleDate: state.puzzleDate, cells: gridStates(state.answerGrid) }),
+            highContrast,
+            fileName: `pseudoku-${state.puzzleID}`,
+            title: `Pseudoku #${state.puzzleID}`,
+            alt: `My Pseudoku #${state.puzzleID} result: the grid's colors, with no numbers`,
+            onShare: (method, extra) => track(EVENTS.SHARE, { content_type: 'result', method, result: won ? 'win' : 'loss', ...extra })
+        };
     };
-    shareButton.onclick = async () => {
-        const method = await shareText(buildShare(), shareButton);
-        track(EVENTS.SHARE, { content_type: 'result', method, result: won ? 'win' : 'loss' });
-    };
+    shareButton.onclick = () => openShareSheet(buildShare(), shareButton);
 };
 
 // --- Submitting a guess ---

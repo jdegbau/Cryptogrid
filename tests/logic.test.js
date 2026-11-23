@@ -221,6 +221,38 @@ test('share: stats text', async () => {
     assert.equal(text, 'My Pseudoku stats\n\nPlayed: 4\nWin rate: 75%\nStreak: 1 · Best: 2\nBest time: 1:01');
 });
 
+test('share card: result card has the share text\'s details and no numbers', async () => {
+    const { describeResultCard } = await import('../js/shareImage.js');
+    const cells = [['preset', 'correct'], ['hint', 'incorrect']];
+    const base = { puzzleID: 12, puzzleDate: '2026-11-23', difficulty: 'Hard', cells, won: true, wrongGuesses: 1, total: 5, timeSpent: 75, streak: 7, url: 'https://jdegbau.com/Cryptogrid/' };
+    const card = describeResultCard(base);
+    assert.equal(card.subtitle, '#12  ·  Hard  ·  Mon, Nov 23');
+    assert.equal(card.headline, 'Solved in 2 guesses');
+    assert.deepEqual(card.dots, ['wrong', 'right', 'unused', 'unused', 'unused']);
+    assert.equal(card.score, '2/5');
+    assert.deepEqual(card.chips, [{ label: 'Time', value: '1:15' }, { label: 'Streak', value: '🔥 7' }]);
+    assert.equal(card.url, 'jdegbau.com/Cryptogrid');
+    assert.deepEqual(card.cells, cells);
+    // Only cell states reach the card: no digits anywhere in the grid.
+    assert.ok(card.cells.flat().every(state => !/\d/.test(state)));
+
+    assert.equal(describeResultCard({ ...base, wrongGuesses: 0 }).headline, 'Solved first try!');
+    const lost = describeResultCard({ ...base, won: false, wrongGuesses: 5, streak: 0, showTime: false });
+    assert.equal(lost.score, 'X/5');
+    assert.deepEqual(lost.dots, Array(5).fill('wrong'));
+    assert.deepEqual(lost.chips, []);
+});
+
+test('share card: stats card', async () => {
+    const { describeStatsCard } = await import('../js/shareImage.js');
+    const card = describeStatsCard({ played: 4, winRate: 75, streak: 1, bestStreak: 2 }, { bestTime: 61, url: 'http://localhost:8000/index.html' });
+    assert.equal(card.headline, '4 puzzles played');
+    assert.deepEqual(card.tiles.map(t => t.value), ['4', '75%', '1', '2']);
+    assert.deepEqual(card.chips, [{ label: 'Best time', value: '1:01' }]);
+    assert.equal(card.url, 'localhost:8000');
+    assert.equal(describeStatsCard({ played: 9, winRate: 100, streak: 9, bestStreak: 9 }, { url: '' }).headline, '🔥 9-day streak');
+});
+
 const game = (date, win = true, guessesUsed = 2, timeSpent = 60) => ({ date, win, guessesUsed, timeSpent, v: STATS_VERSION });
 
 test('stats: best streak survives a loss and needs consecutive days', () => {
