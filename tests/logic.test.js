@@ -224,14 +224,14 @@ test('share: stats text', async () => {
 test('share card: result card has the share text\'s details and no numbers', async () => {
     const { describeResultCard } = await import('../js/shareImage.js');
     const cells = [['preset', 'correct'], ['hint', 'incorrect']];
-    const base = { puzzleID: 12, puzzleDate: '2026-11-23', difficulty: 'Hard', cells, won: true, wrongGuesses: 1, total: 5, timeSpent: 75, streak: 7, url: 'https://jdegbau.com/Cryptogrid/' };
+    const base = { puzzleID: 12, puzzleDate: '2026-11-23', difficulty: 'Hard', cells, won: true, wrongGuesses: 1, total: 5, timeSpent: 75, streak: 7, url: 'https://cryptogrid.jdegbau.com/' };
     const card = describeResultCard(base);
     assert.equal(card.subtitle, '#12  ·  Hard  ·  Mon, Nov 23');
     assert.equal(card.headline, 'Solved in 2 guesses');
     assert.deepEqual(card.dots, ['wrong', 'right', 'unused', 'unused', 'unused']);
     assert.equal(card.score, '2/5');
     assert.deepEqual(card.chips, [{ label: 'Time', value: '1:15' }, { label: 'Streak', value: '🔥 7' }]);
-    assert.equal(card.url, 'jdegbau.com/Cryptogrid');
+    assert.equal(card.url, 'cryptogrid.jdegbau.com');
     assert.deepEqual(card.cells, cells);
     // Only cell states reach the card: no digits anywhere in the grid.
     assert.ok(card.cells.flat().every(state => !/\d/.test(state)));

@@ -37,6 +37,7 @@ Then open <http://localhost:8000>.
 | `gridGenerator.js` | Generates and checks `grids.json` |
 | `grids.json` | The puzzles |
 | `favicon.ico`, `icons/`, `manifest.webmanifest` | Browser-tab icon, home-screen icons and the web app manifest. `icons/favicon.svg` is the source; the PNGs and the ICO are rendered from it. |
+| `CNAME` | The custom domain for GitHub Pages: `cryptogrid.jdegbau.com`. Shared links use it too (`GAME_URL` in `js/share.js`) |
 | `og-image.png` | The preview image shown when a link is shared (1200×630) |
 | `tests/` | Unit tests (`node:test`) |
 

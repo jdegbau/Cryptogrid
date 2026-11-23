@@ -59,7 +59,13 @@ export const buildStatsShare = (summary, { bestTime = null, url }) => {
 
 export const withLink = ({ text, url }) => (url ? `${text}\nPlay: ${url}` : text);
 
-export const gameUrl = () => window.location.origin + window.location.pathname;
+// Shared links always point at the live site, wherever the game was opened
+// (an old address, a preview); a local copy shares its own address.
+export const GAME_URL = 'https://cryptogrid.jdegbau.com/';
+const LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]', ''];
+export const gameUrl = () => (LOCAL_HOSTS.includes(window.location.hostname)
+    ? window.location.origin + window.location.pathname
+    : GAME_URL);
 
 // --- Getting the text out ---
 
