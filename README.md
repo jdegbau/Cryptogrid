@@ -26,7 +26,9 @@ Then open <http://localhost:8000>.
 | `js/stats.js` | Stats dialog; loads Chart.js (pinned, with an integrity hash) on first open |
 | `js/settings.js` | Settings: theme, high-contrast colors, hiding the timer |
 | `js/analytics.js` | Analytics events pushed to `window.dataLayer` for a tag manager. See [`docs/tracking.md`](docs/tracking.md) for every event and field |
-| `js/share.js` | Share text for results and stats; share sheet on phones, clipboard elsewhere, copy-by-hand fallback |
+| `js/share.js` | Share text for results and stats; copying it, with a copy-by-hand fallback |
+| `js/shareImage.js` | The share picture: a spoiler-free card (colors only, no numbers) drawn on a canvas, 1080×1920 for stories and TikTok or 1080×1350 for Instagram posts |
+| `js/shareSheet.js` | The share sheet: previews the picture, sends it to the phone's share menu (Instagram, TikTok…), saves or copies it, or copies the text |
 | `js/date.js` | Today's puzzle, the countdown to the next one, time formatting |
 | `js/storage.js` | Saved game and stats history (localStorage) |
 | `js/rules.js` | What each clue checks and how it's worded, shared by the game and generator |
@@ -35,6 +37,7 @@ Then open <http://localhost:8000>.
 | `gridGenerator.js` | Generates and checks `grids.json` |
 | `grids.json` | The puzzles |
 | `favicon.ico`, `icons/`, `manifest.webmanifest` | Browser-tab icon, home-screen icons and the web app manifest. `icons/favicon.svg` is the source; the PNGs and the ICO are rendered from it. |
+| `CNAME` | The custom domain for GitHub Pages: `cryptogrid.jdegbau.com`. Shared links use it too (`GAME_URL` in `js/share.js`) |
 | `og-image.png` | The preview image shown when a link is shared (1200×630) |
 | `tests/` | Unit tests (`node:test`) |
 

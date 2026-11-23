@@ -1,6 +1,6 @@
-// Sharing: the text of a result or stats summary, and getting it out of the
-// page. Phones get the system share sheet; everything else copies to the
-// clipboard, and if that is blocked the text is shown to copy by hand.
+// Sharing: the text of a result or stats summary, and copying it. The share
+// sheet (shareSheet.js) offers it as "Copy text" beside the share picture;
+// if copying is blocked the text is shown to copy by hand.
 import { formatTime } from './date.js';
 import { showToast, setupDialog } from './ui.js';
 
@@ -27,8 +27,8 @@ export const guessLine = ({ won, wrongGuesses, total }) => {
     return `${emojis} ${score}`;
 };
 
-// The result of one game. The link is kept apart so the share sheet can pass
-// it as a URL (giving a link preview); `withLink` joins them for copying.
+// The result of one game. The link is kept apart; `withLink` joins them for
+// copying.
 // `showTime: false` leaves the time out (the player hid the timer).
 export const buildResultShare = ({ puzzleID, difficulty, grid, won, wrongGuesses, total, timeSpent, streak, url, showTime = true }) => {
     const level = difficulty ? ` (${difficulty})` : '';
@@ -59,14 +59,15 @@ export const buildStatsShare = (summary, { bestTime = null, url }) => {
 
 export const withLink = ({ text, url }) => (url ? `${text}\nPlay: ${url}` : text);
 
-export const gameUrl = () => window.location.origin + window.location.pathname;
+// Shared links always point at the live site, wherever the game was opened
+// (an old address, a preview); a local copy shares its own address.
+export const GAME_URL = 'https://cryptogrid.jdegbau.com/';
+const LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]', ''];
+export const gameUrl = () => (LOCAL_HOSTS.includes(window.location.hostname)
+    ? window.location.origin + window.location.pathname
+    : GAME_URL);
 
 // --- Getting the text out ---
-
-// The share sheet suits phones and tablets; on a computer most people
-// want the text on their clipboard to paste into a chat.
-const useShareSheet = () =>
-    typeof navigator.share === 'function' && window.matchMedia('(pointer: coarse)').matches;
 
 // execCommand('copy') is deprecated but still works in many in-app browsers
 // where the async clipboard API is missing or blocked.
@@ -127,22 +128,6 @@ const showCopyDialog = (text, opener) => {
     area.value = text;
     area.rows = Math.min(text.split('\n').length, 14);
     copyDialog.open(opener);
-};
-
-// Share `{ text, url }` from `button` (used to confirm and to return focus).
-// Resolves to how it went: 'share_sheet', 'share_cancelled', 'clipboard'
-// or 'manual_copy' (shown to copy by hand), for analytics.
-export const shareText = async (share, button) => {
-    if (useShareSheet()) {
-        try {
-            await navigator.share(share.url ? { text: share.text, url: share.url } : { text: share.text });
-            return 'share_sheet';
-        } catch (err) {
-            if (err.name === 'AbortError') return 'share_cancelled';
-            // Share sheet failed to open: fall through to copying.
-        }
-    }
-    return copyOrShow(withLink(share), button);
 };
 
 // Copy `text`, or show it to copy by hand if the browser won't.

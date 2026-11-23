@@ -9,7 +9,7 @@ The code is in `js/analytics.js`. Event names are in `EVENTS` there.
 ```js
 {
   event: 'guess_submit',          // which event (snake_case)
-  schema_version: 1,              // goes up if a field changes meaning or is removed
+  schema_version: 2,              // goes up if a field changes meaning or is removed
   event_data: { ... },            // fields for this event only (see below)
   puzzle: { ... },                // context: today's puzzle
   game:   { ... },                // context: this game so far
@@ -143,19 +143,22 @@ The page was closed or left with a puzzle in progress. Use this to see where pla
 | `exit_type` | `pagehide` |
 
 ### `share`
-The player shared a result or their stats.
+The player shared a result or their stats from the share sheet. Opening the sheet is a `dialog_open` (`dialog_name: share`); this event is sent for each way they then shared it.
 
 | Field | Values |
 |---|---|
 | `content_type` | `result` (today's grid) or `stats` |
-| `method` | `share_sheet` (the phone's share menu opened), `share_cancelled` (the player closed it), `clipboard` (copied) or `manual_copy` (copying was blocked, so the text was shown to copy by hand) |
+| `method` | `image_share_sheet` (the share picture went to the phone's share menu), `image_share_cancelled` (the player closed the menu), `image_download` (saved the picture), `image_clipboard` (copied the picture), `clipboard` (copied the text) or `manual_copy` (copying the text was blocked, so it was shown to copy by hand) |
+| `image_format` | `story` (9:16) or `post` (4:5); only for the `image_` methods |
 | `result` | `win` or `loss` (only when `content_type` is `result`) |
+
+Schema version 1 had `share_sheet` and `share_cancelled` for sharing the text through the phone's share menu, which is no longer offered.
 
 ### `dialog_open`
 
 | Field | Values |
 |---|---|
-| `dialog_name` | `help`, `stats`, `settings`, `clues` (the clue sheet on phones) or `copy` (the copy-by-hand fallback) |
+| `dialog_name` | `help`, `stats`, `settings`, `clues` (the clue sheet on phones), `share` (the share sheet) or `copy` (the copy-by-hand fallback) |
 | `trigger` | `button`, `auto` (help on a first visit) or `fallback` (the copy dialog opened because copying failed) |
 
 ### `setting_change`
@@ -196,7 +199,7 @@ After the clock passed midnight, the player pressed "Play today's puzzle". No fi
 | How guesses improve | `cells_correct` and `cells_close` by `guess_number` |
 | Confusion with the rules | Rate of `guess_rejected` by `reason`; `refused_entries`; `dialog_open` for `help` after the first visit |
 | Retention and habit | `player.current_streak`, `player.games_played`, `load_state: resumed_finished` (players coming back after finishing) |
-| Virality | `share` by `method` and `content_type`; the share rate per `puzzle_complete` |
+| Virality | `share` by `method`, `image_format` and `content_type`; `dialog_open` for `share` against `share` (players who looked but didn't share); the share rate per `puzzle_complete` |
 | Device and input | `app.input_device`, `app.display_mode` (installed app vs browser), `keypad_entries` vs `keyboard_entries` |
 | Accessibility settings | `setting_change`, or `player.high_contrast` and `player.hide_timer` on any event |
 

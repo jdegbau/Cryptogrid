@@ -20,8 +20,8 @@
   <meta property="og:title" content="Pseudoku — Daily Logic Puzzle">
   <meta property="og:description" content="Fill the grid using logic and clues. Can you solve today's Pseudoku?">
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://jdegbau.com/Cryptogrid/">
-  <meta property="og:image" content="https://jdegbau.com/Cryptogrid/og-image.png">
+  <meta property="og:url" content="https://cryptogrid.jdegbau.com/">
+  <meta property="og:image" content="https://cryptogrid.jdegbau.com/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Pseudoku, a daily 4×4 logic puzzle">
@@ -30,7 +30,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Pseudoku — Daily Logic Puzzle">
   <meta name="twitter:description" content="Fill the grid using logic and clues. Can you solve today's Pseudoku?">
-  <meta name="twitter:image" content="https://jdegbau.com/Cryptogrid/og-image.png">
+  <meta name="twitter:image" content="https://cryptogrid.jdegbau.com/og-image.png">
   <meta name="twitter:image:alt" content="Pseudoku, a daily 4×4 logic puzzle">
   <script>
     // Apply saved settings before first paint (see js/settings.js).
@@ -230,6 +230,43 @@
         <input type="checkbox" name="hideTimer" role="switch" aria-describedby="timer-help">
       </label>
     </form>
+  </dialog>
+
+  <dialog id="share-modal" class="sheet share-sheet" aria-labelledby="share-title">
+    <div class="sheet-header">
+      <h2 id="share-title" tabindex="-1" autofocus>Share</h2>
+      <button id="share-close" class="icon-button sheet-close" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <div class="share-formats" role="group" aria-label="Picture size">
+        <button type="button" class="share-format" data-format="story" aria-pressed="true">Story <span>9:16</span></button>
+        <button type="button" class="share-format" data-format="post" aria-pressed="false">Post <span>4:5</span></button>
+      </div>
+      <div class="share-frame loading" id="share-frame" data-format="story">
+        <img id="share-preview" alt="">
+      </div>
+      <p class="muted share-tip" id="share-tip"></p>
+      <button class="button primary share-main" id="share-image" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7.5 7.5 12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>
+        <span class="button-label">Share image</span>
+      </button>
+      <div class="share-actions">
+        <button class="button" id="share-save">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7.5 10.5 12 15l4.5-4.5M5 19h14"/></svg>
+          <span class="button-label">Save image</span>
+        </button>
+        <button class="button" id="share-copy-image" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+          <span class="button-label">Copy image</span>
+        </button>
+        <button class="button" id="share-copy-text">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h9"/></svg>
+          <span class="button-label">Copy text</span>
+        </button>
+      </div>
+    </div>
   </dialog>
 
   <dialog id="copy-modal" class="sheet" aria-labelledby="copy-title">

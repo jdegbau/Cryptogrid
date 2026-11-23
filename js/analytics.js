@@ -11,7 +11,8 @@
 // read them at any point. Nothing here identifies the player, and no answers
 // or guessed digits are sent: the data layer is readable in the console.
 
-export const SCHEMA_VERSION = 1;
+// 2: `share` methods changed when sharing moved to the share picture.
+export const SCHEMA_VERSION = 2;
 
 // Event names, in one place so tags and code agree.
 export const EVENTS = Object.freeze({

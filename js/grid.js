@@ -314,14 +314,19 @@ export const restoreCells = (userSolution, cellStates, answerGrid, createInput, 
     });
 };
 
+// Each cell's state for sharing: 'preset', 'correct', 'incorrect', 'hint'
+// or 'empty'. Never the numbers, so a shared grid gives nothing away.
+export const gridStates = (answerGrid) =>
+    answerGrid.map((rowValues, row) => rowValues.map((_, col) => {
+        const cellDiv = cellAt(row, col);
+        if (cellDiv.classList.contains('preset')) return 'preset';
+        if (cellDiv.classList.contains('correct')) return 'correct';
+        if (cellDiv.classList.contains('incorrect')) return 'incorrect';
+        if (cellDiv.classList.contains('hint')) return 'hint';
+        return 'empty';
+    }));
+
 // One emoji per cell for sharing; `emoji` maps each state to its square
 // (see CELL_EMOJI in share.js).
 export const gridEmojis = (answerGrid, emoji) =>
-    answerGrid.map((rowValues, row) => rowValues.map((_, col) => {
-        const cellDiv = cellAt(row, col);
-        if (cellDiv.classList.contains('preset')) return emoji.preset;
-        if (cellDiv.classList.contains('correct')) return emoji.correct;
-        if (cellDiv.classList.contains('incorrect')) return emoji.incorrect;
-        if (cellDiv.classList.contains('hint')) return emoji.hint;
-        return emoji.empty;
-    }).join('')).join('\n');
+    gridStates(answerGrid).map(row => row.map(state => emoji[state]).join('')).join('\n');

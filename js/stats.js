@@ -2,7 +2,9 @@
 // dialog opens; the summary shows straight away and the charts follow.
 import { readStats, summarizeStats, guessDistribution, dailySeries, encodeStatsBackup, importStatsBackup } from './storage.js';
 import { formatTime } from './date.js';
-import { buildStatsShare, shareText, copyOrShow, gameUrl } from './share.js';
+import { buildStatsShare, copyOrShow, gameUrl } from './share.js';
+import { describeStatsCard } from './shareImage.js';
+import { openShareSheet } from './shareSheet.js';
 import { track, EVENTS } from './analytics.js';
 
 const CHART_JS_SRC = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js';
@@ -165,10 +167,8 @@ export const setupStatsDialog = (storage, getToday) => {
     const chartArea = document.getElementById('stats-charts');
     const shareButton = document.getElementById('stats-share');
     let share = null;
-    shareButton.addEventListener('click', async () => {
-        if (!share) return;
-        const method = await shareText(share, shareButton);
-        track(EVENTS.SHARE, { content_type: 'stats', method });
+    shareButton.addEventListener('click', () => {
+        if (share) openShareSheet(share(), shareButton);
     });
 
     // Backup codes for moving stats between devices.
@@ -202,7 +202,19 @@ export const setupStatsDialog = (storage, getToday) => {
         const summary = summarizeStats(readStats(storage), getToday());
         renderSummary(summary);
         renderDistribution(summary, getToday());
-        share = summary.played ? buildStatsShare(summary, { bestTime: bestTime(summary), url: gameUrl() }) : null;
+        share = summary.played ? () => {
+            const options = { bestTime: bestTime(summary), url: gameUrl() };
+            return {
+                heading: 'Share your stats',
+                text: buildStatsShare(summary, options),
+                card: describeStatsCard(summary, options),
+                highContrast: document.documentElement.dataset.contrast === 'high',
+                fileName: 'pseudoku-stats',
+                title: 'My Pseudoku stats',
+                alt: 'My Pseudoku stats',
+                onShare: (method, extra) => track(EVENTS.SHARE, { content_type: 'stats', method, ...extra })
+            };
+        } : null;
         shareButton.hidden = !share;
 
         chartArea.hidden = true;
