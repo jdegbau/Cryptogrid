@@ -24,7 +24,8 @@ import { readAdminMode, practicePuzzleID, setupAdmin } from './admin.js';
 const TOTAL_GUESSES = 5;
 const WIN_MESSAGE = "Congratulations! You've solved the puzzle!";
 const LOSE_MESSAGE = "Game over! You've used all your guesses.";
-const LOAD_ERROR = "Sorry, today's puzzle couldn't be loaded.";
+// Messages under the grid stay on one line, so the grid never changes size.
+const LOAD_ERROR = "Today's puzzle couldn't load.";
 
 const storage = window.localStorage;
 const HELP_SEEN_KEY = 'pseudokuSeenHelp';
@@ -231,6 +232,7 @@ const startCountdown = () => {
                 window.location.reload();
             });
             el.appendChild(button);
+            if (board().style.height) lockBoardSize();  // the button is taller than the line
             return;
         }
         el.textContent = 'Next puzzle in ';
@@ -334,7 +336,9 @@ const drawPuzzle = () => {
 // The grid fills the height the rest of the game leaves free. At the end
 // the number pad gives way to the result, which is a different height, so
 // the board is held at the size it has during play: measured with the play
-// layout put back for a moment (no paint happens in between).
+// layout put back for a moment (no paint happens in between). The result
+// is designed to fit in the pad's place; if it ever doesn't, the board
+// gives up just enough height that the page still never has to scroll.
 
 const board = () => document.querySelector('.board');
 
@@ -350,6 +354,11 @@ const lockBoardSize = () => {
     document.body.classList.remove('measuring-play-layout');
     board().style.flex = 'none';
     board().style.height = `${height}px`;
+    const overflow = document.documentElement.scrollHeight - window.innerHeight;
+    if (overflow > 0) {
+        const floor = parseFloat(getComputedStyle(board()).minHeight) || 0;
+        board().style.height = `${Math.max(floor, height - overflow)}px`;
+    }
 };
 
 // Turning a phone or resizing the window changes the size it should be.
@@ -376,12 +385,12 @@ const endGame = (won, { restoring = false, celebrateAfterMs = 0 } = {}) => {
     setEndResult(won ? WIN_MESSAGE : LOSE_MESSAGE, won ? 'win' : 'lose', !restoring);
     editableInputs().forEach(input => { input.disabled = true; });
     $('keypad').hidden = true;
-    lockBoardSize();
     // The clues stay up: tapping a cell still shows its two (see setupClueHighlight).
     highlightClues(null);
     state.focusedCell = null;
     if (document.activeElement && document.activeElement.closest?.('.grid-cell')) shareButton.focus({ preventScroll: true });
     startCountdown();
+    lockBoardSize();
 
     // Submitted guesses that weren't the solution; a win adds the winning one.
     const wrongGuesses = TOTAL_GUESSES - state.guessesLeft;
@@ -446,13 +455,13 @@ const checkSolution = () => {
     const inputs = editableInputs();
     const empty = inputs.filter(input => input.value === '');
     if (empty.length) {
-        refuseSubmit(empty, 'Fill in every cell before submitting.', 'incomplete');
+        refuseSubmit(empty, 'Fill in every cell first.', 'incomplete');
         enableAfter(1000);
         return;
     }
     const repeats = inputs.filter(input => guessesFor(Number(input.dataset.row), Number(input.dataset.col)).includes(input.value));
     if (repeats.length) {
-        refuseSubmit(repeats, 'You cannot submit with a previously guessed value!', 'repeated_value');
+        refuseSubmit(repeats, 'Some of those were already tried.', 'repeated_value');
         enableAfter(1000);
         return;
     }
@@ -517,7 +526,7 @@ const checkSolution = () => {
 
 const guessesLeftMessage = () =>
     state.guessesLeft === TOTAL_GUESSES
-        ? `Fill the grid, then submit. You have ${TOTAL_GUESSES} guesses.`
+        ? 'Fill the grid, then submit.'
         : `You have ${state.guessesLeft} guess${state.guessesLeft === 1 ? '' : 'es'} left.`;
 
 const startPuzzle = (puzzle) => {
