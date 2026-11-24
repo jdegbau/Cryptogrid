@@ -529,11 +529,6 @@ svg .fill {
     overflow: hidden;
 }
 
-/* After the game ends: keep the space so the grid doesn't jump */
-.active-clues.concealed {
-    visibility: hidden;
-}
-
 .active-clue + .active-clue {
     border-top: 1px solid var(--border);
 }
@@ -700,6 +695,8 @@ svg .fill {
     opacity: 1;
     -webkit-text-fill-color: currentColor;
     cursor: default;
+    /* Let taps through to the cell, which shows its clues after the game */
+    pointer-events: none;
 }
 
 .grid-cell.preset,
@@ -1004,6 +1001,20 @@ svg .fill {
     color: var(--text);
     font-weight: 600;
     font-size: 1.05rem;
+}
+
+/* Put the play layout back for a moment so game.js can measure the
+   grid's size during play (lockBoardSize). Never painted. */
+.measuring-play-layout #keypad[hidden] { display: grid !important; visibility: hidden; }
+.measuring-play-layout #countdown { display: none; }
+.measuring-play-layout .result.result-end {
+    display: block;
+    height: 1.45em;
+    margin-top: 4px;
+    padding: 0;
+    font-size: 0.98rem;
+    overflow: hidden;
+    visibility: hidden;
 }
 
 .countdown {
@@ -1916,6 +1927,7 @@ svg .fill {
     .button { min-height: 48px; }
     .controls { margin-top: 0; gap: 2px; }
     .result, .countdown { margin-top: 2px; font-size: 0.92rem; line-height: 1.35; }
+    .measuring-play-layout .result.result-end { margin-top: 2px; font-size: 0.92rem; }
     .active-clues { --clue-size: 0.88rem; --clue-pad: 4px; --strip-pad: 4px; padding-inline: 12px; }
 }
 

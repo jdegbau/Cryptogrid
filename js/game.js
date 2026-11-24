@@ -282,6 +282,13 @@ const setupClueHighlight = (cellDiv, row, col) => {
         highlightClues(row, col);
         keypad?.update();
     });
+    // Once the game is over the cells can't take focus, so a tap or click
+    // shows that cell's clues instead (given cells too).
+    cellDiv.addEventListener('click', () => {
+        if (!isGameOver()) return;
+        state.focusedCell = [row, col];
+        highlightClues(row, col);
+    });
     if (!window.matchMedia('(hover: hover)').matches) return;
     cellDiv.addEventListener('mouseenter', () => highlightClues(row, col, { cards: false }));
     cellDiv.addEventListener('mouseleave', () => {
@@ -319,9 +326,41 @@ const drawPuzzle = () => {
         info.append(chip);
     }
     $('keypad').hidden = false;
-    $('active-clues').classList.remove('concealed');
+    unlockBoardSize();
     highlightClues(null);
 };
+
+// --- Keeping the grid's size ---
+// The grid fills the height the rest of the game leaves free. At the end
+// the number pad gives way to the result, which is a different height, so
+// the board is held at the size it has during play: measured with the play
+// layout put back for a moment (no paint happens in between).
+
+const board = () => document.querySelector('.board');
+
+const unlockBoardSize = () => {
+    board().style.removeProperty('flex');
+    board().style.removeProperty('height');
+};
+
+const lockBoardSize = () => {
+    unlockBoardSize();
+    document.body.classList.add('measuring-play-layout');
+    const height = board().getBoundingClientRect().height;
+    document.body.classList.remove('measuring-play-layout');
+    board().style.flex = 'none';
+    board().style.height = `${height}px`;
+};
+
+// Turning a phone or resizing the window changes the size it should be.
+// Mobile browser bars showing and hiding only change the height, so only
+// a change of width counts.
+let lastWidth = window.innerWidth;
+window.addEventListener('resize', () => {
+    if (window.innerWidth === lastWidth) return;
+    lastWidth = window.innerWidth;
+    if (board().style.height) lockBoardSize();
+});
 
 // --- End of game ---
 
@@ -337,7 +376,8 @@ const endGame = (won, { restoring = false, celebrateAfterMs = 0 } = {}) => {
     setEndResult(won ? WIN_MESSAGE : LOSE_MESSAGE, won ? 'win' : 'lose', !restoring);
     editableInputs().forEach(input => { input.disabled = true; });
     $('keypad').hidden = true;
-    $('active-clues').classList.add('concealed');
+    lockBoardSize();
+    // The clues stay up: tapping a cell still shows its two (see setupClueHighlight).
     highlightClues(null);
     state.focusedCell = null;
     if (document.activeElement && document.activeElement.closest?.('.grid-cell')) shareButton.focus({ preventScroll: true });
