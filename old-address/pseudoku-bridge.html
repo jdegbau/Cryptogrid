@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Pseudoku has moved</title>
+  <link rel="canonical" href="https://pseudoku.jdegbau.com/">
+  <script>
+    // Served at an old address of the game (see README.md in this folder).
+    // In a frame on the live site: hand over what this address saved, to
+    // that site only. Opened directly: go to the live site.
+    (function () {
+      var LIVE = 'https://pseudoku.jdegbau.com';
+      if (window.parent !== window) {
+        var data = {};
+        try {
+          for (var i = 0; i < localStorage.length; i++) {
+            var key = localStorage.key(i);
+            if (key && key.indexOf('pseudoku') === 0) data[key] = localStorage.getItem(key);
+          }
+        } catch (e) { }
+        window.parent.postMessage({ type: 'pseudoku-old-data', data: data }, LIVE);
+      } else {
+        window.location.replace(LIVE + '/' + window.location.search + window.location.hash);
+      }
+    })();
+  </script>
+</head>
+<body style="background:#0f0e17;color:#fffffe;font-family:system-ui,sans-serif;padding:16px">
+  <p>Pseudoku has moved to <a href="https://pseudoku.jdegbau.com/" style="color:#a786ff">pseudoku.jdegbau.com</a>.</p>
+</body>
+</html>

@@ -31,6 +31,7 @@ Then open <http://localhost:8000>.
 | `js/shareSheet.js` | The share sheet: previews the picture, sends it to the phone's share menu (Instagram, TikTok…), saves or copies it, or copies the text |
 | `js/date.js` | Today's puzzle, the countdown to the next one, time formatting |
 | `js/storage.js` | Saved game and stats history (localStorage) |
+| `js/migrate.js` | Brings saved games, stats and settings over from the game's old addresses on first visit |
 | `js/rules.js` | What each clue checks and how it's worded, shared by the game and generator |
 | `js/solver.js` | Counts a puzzle's solutions |
 | `js/encoding.js` | Light encoding of answers so they can't be read at a glance (not security) |
@@ -38,6 +39,7 @@ Then open <http://localhost:8000>.
 | `grids.json` | The puzzles |
 | `favicon.ico`, `icons/`, `manifest.webmanifest` | Browser-tab icon, home-screen icons and the web app manifest. `icons/favicon.svg` is the source; the PNGs and the ICO are rendered from it. |
 | `CNAME` | The custom domain for GitHub Pages: `pseudoku.jdegbau.com`. Shared links use it too (`GAME_URL` in `js/share.js`) |
+| `old-address/` | The page each old address serves so players keep their stats and old links still work. See [`old-address/README.md`](old-address/README.md) |
 | `og-image.png` | The preview image shown when a link is shared (1200×630) |
 | `tests/` | Unit tests (`node:test`) |
 
