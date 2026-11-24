@@ -14,7 +14,6 @@ import {
     bestStreak, guessDistribution, dailySeries, encodeStatsBackup, decodeStatsBackup, mergeStats, importStatsBackup
 } from '../js/storage.js';
 import { verifyPuzzles } from '../gridGenerator.js';
-import { mergeOldData, pendingBridges, migrateFromOldAddresses, OLD_BRIDGES } from '../js/migrate.js';
 import { cellStateClass } from '../js/grid.js';
 
 const puzzles = JSON.parse(readFileSync(new URL('../grids.json', import.meta.url), 'utf8'));
@@ -408,51 +407,4 @@ test('line effects: admin demos find a line that plays each animation', () => {
     // One demo per animation, with no repeats.
     const types = LINE_EFFECT_DEMOS.map(d => planLineEffect({ rule: d.rule }, [1, 2, 3, 4]).type);
     assert.equal(new Set(types).size, types.length);
-});
-
-test('migrate: old stats merge in, and this address keeps its own result for a shared day', () => {
-    const storage = new MemoryStorage();
-    storage.setItem(STATS_KEY, JSON.stringify([{ date: '2026-11-23', win: false, guessesUsed: 5, timeSpent: 90, v: 2 }]));
-    const old = [
-        { date: '2026-11-21', win: true, guessesUsed: 0, timeSpent: 40 },          // old format: upgraded once, on read
-        { date: '2026-11-22', win: true, guessesUsed: 2, timeSpent: 60, v: 2 },
-        { date: '2026-11-23', win: true, guessesUsed: 1, timeSpent: 30, v: 2 },    // played here too: ours wins
-        { date: 'nope', win: true, guessesUsed: 1, timeSpent: 1 }                  // invalid: dropped
-    ];
-    const result = mergeOldData(storage, { [STATS_KEY]: JSON.stringify(old) });
-    assert.equal(result.gamesAdded, 2);
-    const byDate = Object.fromEntries(readStats(storage).map(e => [e.date, e]));
-    assert.deepEqual(Object.keys(byDate).sort(), ['2026-11-21', '2026-11-22', '2026-11-23']);
-    assert.equal(byDate['2026-11-21'].guessesUsed, 1);
-    assert.equal(byDate['2026-11-23'].win, false);
-    // Merging the same data again adds nothing.
-    assert.equal(mergeOldData(storage, { [STATS_KEY]: JSON.stringify(old) }).gamesAdded, 0);
-});
-
-test('migrate: settings, saved game and flags are only filled in where nothing is saved', () => {
-    const storage = new MemoryStorage();
-    storage.setItem('pseudokuSettings', JSON.stringify({ theme: 'dark' }));
-    const result = mergeOldData(storage, {
-        pseudokuSettings: JSON.stringify({ theme: 'light' }),
-        pseudokuSeenHelp: '1',
-        pseudokuShareFormat: 'image',
-        [GAME_KEY]: '{broken',
-        pseudokuAdmin: '1'
-    });
-    assert.deepEqual(result.copied.sort(), ['pseudokuSeenHelp', 'pseudokuShareFormat']);
-    assert.equal(JSON.parse(storage.getItem('pseudokuSettings')).theme, 'dark');
-    assert.equal(storage.getItem(GAME_KEY), null);
-    assert.equal(storage.getItem('pseudokuAdmin'), null);
-    assert.deepEqual(mergeOldData(storage, null), { gamesAdded: 0, copied: [] });
-});
-
-test('migrate: answered bridges and players past the try limit are not asked again', async () => {
-    const storage = new MemoryStorage();
-    assert.deepEqual(pendingBridges(storage), OLD_BRIDGES);
-    storage.setItem('pseudokuMigratedFrom', JSON.stringify([new URL(OLD_BRIDGES[0]).origin]));
-    assert.deepEqual(pendingBridges(storage), OLD_BRIDGES.slice(1));
-    storage.setItem('pseudokuMigrateTries', '20');
-    assert.deepEqual(pendingBridges(storage), []);
-    // Anywhere but the live site, nothing is asked.
-    assert.equal(await migrateFromOldAddresses(new MemoryStorage(), { origin: 'http://localhost:8000' }), null);
 });

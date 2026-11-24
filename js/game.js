@@ -20,7 +20,6 @@ import { openShareSheet } from './shareSheet.js';
 import { setupSettingsDialog } from './settings.js';
 import { track, EVENTS, setContextProvider, setTrackingEnabled, inputDevice, displayMode, ruleList, seconds } from './analytics.js';
 import { readAdminMode, practicePuzzleID, setupAdmin } from './admin.js';
-import { migrateFromOldAddresses } from './migrate.js';
 
 const TOTAL_GUESSES = 5;
 const WIN_MESSAGE = "Congratulations! You've solved the puzzle!";
@@ -583,11 +582,6 @@ const setupCluesSheet = () => {
 };
 
 const init = async () => {
-    // Bring over anything saved at an old address first, so the settings,
-    // help-seen flag and saved game read below include it. Instant once done.
-    const puzzlesRequest = fetch('grids.json');
-    puzzlesRequest.catch(() => { });  // a failure is reported below, once awaited
-    await migrateFromOldAddresses(storage);
     setContextProvider(analyticsContext);
     settings = setupSettingsDialog(storage, setupDialog);
     setupStatsDialog(storage, () => state.puzzleDate || getPuzzleDate());
@@ -627,7 +621,7 @@ const init = async () => {
     window.addEventListener('beforeunload', saveGame);
 
     try {
-        const response = await puzzlesRequest;
+        const response = await fetch('grids.json');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         state.puzzles = await response.json();
     } catch (error) {
