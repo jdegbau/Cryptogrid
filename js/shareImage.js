@@ -62,7 +62,7 @@ const font = (weight, size) => `${weight} ${size}px ${FONT}`;
 
 // --- What goes on the card (no canvas here, so it can be tested) ---
 
-// "cryptogrid.jdegbau.com" from the full game URL.
+// "pseudoku.jdegbau.com" from the full game URL.
 export const displayUrl = (url) => (url || '').replace(/^https?:\/\//, '').replace(/\/+$/, '').replace(/\/index\.html$/, '');
 
 // "Mon, Nov 23" from "2026-11-23", read as a calendar date (no time zone).
